@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+set -Ceuo pipefail
+trap exit ERR
+
+if ! type vim zsh git tmux cmake >/dev/null 2>&1;then
+  if type apt >/dev/null 2>&1; then
+    sudo apt update
+    sudo apt -y install vim zsh git tmux cmake build-essential avahi-daemon
+    sudo systemctl start avahi-daemon
+    sudo systemctl enable avahi-daemon
+  elif type yum >/dev/null 2>&1; then
+    sudo yum -y groupinstall "Development Tools"
+    sudo yum -y install vim zsh git tmux cmake kernel-devel kernel-headers avahi
+    sudo systemctl start avahi-daemon
+    sudo systemctl enable avahi-daemon
+  elif type pacman >/dev/null 2>&1; then
+    sudo pacman -Syu
+    sudo pacman -Sy vim zsh git tmux cmake base-devel avahi
+  else
+    echo "Your computer does not have Package Managers 'apt' , 'yum' or 'pacman' installed. Please install the following packages manually and then re-run with the N option"
+    echo "Packages: vim, zsh, git, tmux, cmake, build-essential"
+    return 2>&- || exit
+  fi
+fi
+
+if [ ! -d ~/.ssh ];then
+  mkdir -p ~/.ssh
+fi
+
+if [ ! $(ssh git@github.com) ];then
+  ssh-keygen -t ed25519 -N "" -f ~/.ssh/github
+  cat << EOF >> ~/.ssh/config
+host github github.com
+  Hostname github.com
+  IdentityFile ~/.ssh/github
+  User git
+EOF
+  echo -n "GitHub SSH key: "
+  cat ~/.ssh/github.pub
+  read -p "Go to the following URL and register Github SSH key. <https://github.com/settings/ssh/new> Once registration is complete, press the Enter key."
+  ssh github
+else
+  echo skip.
+  return 2>&- || exit
+fi

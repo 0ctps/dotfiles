@@ -1,0 +1,64 @@
+#[http]
+#  proxy = https://0.0.0.0:8080
+
+[user]
+  name = 
+  email = 
+
+[url "github.com:"]
+    InsteadOf = https://github.com/
+    InsteadOf = git@github.com:
+
+[color]
+  status = auto
+  diff = auto
+  branch = auto
+  interactive = auto
+  grep = auto
+
+[push]
+  default = tracking
+
+[core]
+  excludesfile = ~/.gitignore
+  autocrlf = input
+
+[alias]
+  st = status
+  sh = show
+  so = remote show origin
+  ft = fetch
+  up = pull --rebase
+  rbm = rebase master
+  ad = add
+  ci = commit -a
+  cam = commit -a --amend
+  co = checkout
+  br = branch
+  ba = branch -a
+  bm = branch --merged
+  bn = branch --no-merged
+  wc = whatchanged
+  ls = log --stat
+  lp = log -p
+  la = log --pretty=\"format:%ad %h (%an): %s\" --date=short
+  lr = log origin
+  oneline = log --pretty=oneline
+  ranking = shortlog -s -n --no-merges
+  log-graph = log --graph --date=short --pretty=format:'%Cgreen%h %cd %Cblue%cn %Creset%s'
+  log-all = log --graph --all --color --pretty='%x09%h %cn%x09%s %Cred%d%Creset'
+  dm = diff master
+  dw = diff --color-words
+  dc = diff --cached
+  ds = diff --staged
+  d1 = diff HEAD~
+  d2 = diff HEAD~~
+  d3 = diff HEAD~~~
+  d4 = diff HEAD~~~~
+  d5 = diff HEAD~~~~~
+  d10 = diff HEAD~~~~~~~~~~
+  edit-unmerged = "!f() { git ls-files --unmerged | cut -f2 | sort -u ; }; vim `f`"
+  add-unmerged = "!f() { git ls-files --unmerged | cut -f2 | sort -u ; }; git add `f`"
+  gr = grep
+  gn = grep -n
+ submodule-upgrade = submodule foreach git pull origin master

@@ -1,0 +1,571 @@
+#                          . . .
+#                     .             .
+#                .                      .
+#             .
+#           =                                :
+#           |                             ====
+#           |                         -=======
+#           |                     ============
+#           |                 ================
+#           |                +===-:===========
+#           |                +==-   +=========
+#           |                +=+ -============
+#           |                +==    ==========
+#           -                +===+  ===::====+
+#              .             +=+   +=::=+===
+#                  .         +=== -======
+#                      .     +====-
+#                         . .+."'
+
+#               __    _             _
+#               \ \  | |__  __ _ __| |_
+#                > > | '_ \/ _` (_-< ' \
+#               /_/  |_.__/\__,_/__/_||_|  ___
+#                                         |___|
+
+#       * auther    : 0
+#       * ver       : 1.01
+
+
+
+
+
+
+# * »   [1] general
+# -------------------------------------------                            /
+# ----------------------------------------------------------------------/
+# [
+
+export EDITOR=vim
+export LANG=en_US
+export ENCODE=UTF-8
+export LC_CTYPE=$LANG.$ENCODE
+export LC_ALL=$LANG.$ENCODE
+export KCODE=u
+
+set -o vi
+bind '"jj":vi-movement-mode'
+
+#shopt -s auto_pushd
+shopt -s autocd
+shopt -u mailwarn
+shopt -u hostcomplete
+alias history='history -E'
+
+# ref. https://rcmdnk.com/blog/2017/10/13/computer-bash-zsh
+source_file() {
+ if [ $# -lt 1 ]; then
+   echo "ERROR!!! source_file is called w/o an argument"
+   return
+ fi
+ for arg in "$@"; do
+   if [ -r "$arg" ]; then
+     . "$arg"
+   fi
+ done
+}
+# end
+
+
+
+# * »»  complement -------------------------------------/
+# [[
+
+if [ -f /usr/share/bash-completion/bash_completion ]; then
+ . /usr/share/bash-completion/bash_completion
+elif [ -f /etc/bash_completion ]; then
+ . /etc/bash_completion
+fi
+bind '"\e[Z":menu-complete'
+shopt -s nocaseglob
+shopt -s extglob
+#shopt -u nomatch
+complete -cf sudo
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  history ----------------------------------------/
+# [[
+
+# ref. https://unix.stackexchange.com/questions/273861/unlimited-history-in-zsh
+export HISTFILE=$HOME/.bash_history
+export HISTSIZE=10000000
+export SAVEHIST=10000000
+
+shopt -s histappend
+shopt -s histreedit
+shopt -s histverify
+shopt -s extglob
+shopt -s cmdhist
+
+bind '"\e[A":history-search-backward'
+bind '"\e[B":history-search-forward'
+function history-all { history -E 1; }
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  path -------------------------------------------/
+# [[
+
+if [ -e $HOME/.go ]; then
+ export GOPATH=$HOME/.go
+ export PATH=$GOPATH/bin:$PATH
+ export GO15VENDOREXPERIMENT=1
+fi
+
+if [ -e $HOME/.cargo/bin ]; then
+ export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  plugin -----------------------------------------/
+# [[
+
+#if [ -x "$(command -v git)" ]; then
+# #
+#fi
+
+#https://github.com/junegunn/fzf
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+if [ -x "$(command -v fzf)" ]; then
+  fe() {
+    local file
+    file=$(fzf --query="$1" --select-1 --exit-0)
+    [ -n "$file" ] && ${EDITOR:-vim} "$file"
+  }
+
+  fd() {
+    local dir
+    dir=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m) &&
+    cd "$dir"
+  }
+
+  fh() {
+    selected_command=$( ([ -n "$BASH_VERSION" ] && fc -l 1 || history) | fzf +s | sed 's/ *[0-9]* *//')
+    if [ -n "$BASH_VERSION" ]; then
+      print -s "$selected_command"
+    else
+      history -s "$selected_command"
+    fi
+    eval "$selected_command"
+  }
+
+  fkill() {
+    ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
+  }
+fi
+
+[ -f ~/.enhancd/init.sh ] && source ~/.enhancd/init.sh
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  alias -------------------------------------------/
+# [[
+
+alias v='vim'
+
+function runcpp() { gcc "$1" && shift && ./a.out "$@"; }
+alias c=runcpp
+alias cpp=runcpp
+
+function extract() {
+  case $1 in
+    *.tar.gz|*.tgz) tar xzvf $1;;
+    *.tar.xz) tar Jxvf $1;;
+    *.zip) unzip $1;;
+    *.lzh) lha e $1;;
+    *.tar.bz2|*.tbz) tar xjvf $1;;
+    *.tar.Z) tar zxvf $1;;
+    *.gz) gzip -d $1;;
+    *.bz2) bzip2 -dc $1;;
+    *.Z) uncompress $1;;
+    *.tar) tar xvf $1;;
+    *.arj) unarj $1;;
+    *.rar) unrar $1;;
+  esac
+}
+alias gz='extract'
+alias tgz='extract'
+alias zip='extract'
+alias lzh='extract'
+alias bz2='extract'
+alias tbz='extract'
+alias Z='extract'
+alias tar='extract'
+alias arj='extract'
+alias xz='extract'
+alias rar='extract'
+
+alias zmv='noglob zmv -W'
+alias fuck='eval $(thefuck $(fc -ln -1))'
+alias diff='diff -u'
+
+if [ -x "$(command -v tmux)" ]; then
+  alias tl='tmux ls'
+  alias tk='tmux kill-session -t $1'
+  alias ta='tmux a'
+  alias tat='tmux a -t $1'
+fi
+
+bind -x '"\C-l": clear;update_prompt'
+
+alias ls='ls -F --color=auto --group-directories-first'
+alias cd='cd_func'
+cd_func() {
+  builtin cd "$@" && ls;
+}
+
+# * »»» color --------------------------/
+
+# * »»»» cat
+if [ -x "$(command -v pygmentize)" ]; then
+  alias cat='pygmentize -O style=monokai -f console256 -g'
+fi
+
+# * »»»» diff
+if [ -x "$(command -v colordiff)" ]; then
+  alias diff='colordiff -u'
+fi
+
+# * »»»» less
+export MANPAGER='less -R'
+function man() {
+  env \
+    LESS_TERMCAP_mb=$(printf "\e[1;31m") \
+    LESS_TERMCAP_md=$(printf "\e[1;31m") \
+    LESS_TERMCAP_me=$(printf "\e[0m") \
+    LESS_TERMCAP_se=$(printf "\e[0m") \
+    LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
+    LESS_TERMCAP_ue=$(printf "\e[0m") \
+    LESS_TERMCAP_us=$(printf "\e[1;32m") \
+    man "$@"
+}
+if [ -x "$(command -v unbuffered)" ]; then
+  function less_with_unbuffer() {
+    unbuffered "$@" |& less -SR
+  }
+  alias ul=less_with_unbuffer
+fi
+
+# * »»»» grep
+alias grep='grep --color'
+
+# * »»»» grc
+if [ -x "$(command -v grc)" ]; then
+  alias mount='grc mount'
+  alias ifconfig='grc ifconfig'
+  alias dig='grc dig'
+  alias ldap='grc ldap'
+  alias netstat='grc netstat'
+  alias ping='grc ping'
+  alias ps='grc ps'
+  alias traceroute='grc traceroute'
+  alias gcc='grc gcc'
+  alias g++='grc g++'
+fi
+
+# * ««« --------------------------------/
+
+
+# ]]
+# * «« -------------------------------------------------/
+
+# ]
+
+
+
+
+
+# * »   [2] look
+# -------------------------------------------                           /
+# ---------------------------------------------------------------------/
+# [
+
+case $TERM in
+  xterm*)
+    export TERM=xterm-256color
+    ;;
+esac
+
+
+
+# * »»  ls color ---------------------------------------/
+# [[
+
+export LSCOLORS=gxfxcxdxbxegedabagacad
+export LS_COLORS='no=00;38;5;244:rs=0:di=00;38;5;33:ln=00;38;5;37:mh=00:pi=48;5;230;38;5;136;01:so=48;5;230;38;5;136;01:do=48;5;230;38;5;136;01:bd=48;5;230;38;5;244;01:cd=48;5;230;38;5;244;01:or=48;5;235;38;5;160:su=48;5;160;38;5;230:sg=48;5;136;38;5;230:ca=30;41:tw=48;5;64;38;5;230:ow=48;5;235;38;5;33:st=48;5;33;38;5;230:ex=00;38;5;64:'
+
+if [ -e "$HOME/.dircolors" ]; then
+  if [ -x "$(command -v dircolors)" ]; then
+    eval "$(dircolors "$HOME/.dircolors")"
+  fi
+fi
+
+export CLICOLOR=true
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »» prompt -----------------------------------------/
+# [[
+
+PS1='\w\$ '
+SPROMPT="%r is correct [n,y,a,e]: "
+
+case "$TERM" in
+  xterm*)
+    get_formatted_directory_path() {
+      local current_dir="$PWD"
+      local home_dir="$HOME"
+      local delimiter=" | "
+
+      if [ "$current_dir" = "/" ]; then
+        echo "/"
+        return
+      fi
+
+      if [ "$current_dir" = "$home_dir" ]; then
+        echo "~"
+        return
+      fi
+
+      local dir_array=()
+      IFS="/" read -ra tmp_array <<< "$current_dir"
+      for dir in "${tmp_array[@]}"; do
+        if [ -n "$dir" ]; then
+          dir_array+=("$dir")
+        fi
+      done
+
+      if [ "${current_dir:0:${#home_dir}}" = "$home_dir" ]; then
+        dir_array=("~" "${dir_array[@]:2}")
+      fi
+
+      if [ ${#dir_array[@]} -gt 5 ]; then
+        dir_array=("${dir_array[0]}" "${dir_array[1]}" "..." "${dir_array[-3]}" "${dir_array[-2]}" "${dir_array[-1]}")
+      fi
+
+      local output=""
+      for i in "${!dir_array[@]}"; do
+        if [ $i -gt 0 ]; then
+          output="${output}${delimiter}"
+        fi
+        output="${output}${dir_array[$i]}"
+      done
+
+      echo "$output"
+    }
+
+    DARKGRAY="\033[38;5;237m"
+    DARKWHITE="\033[38;5;250m"
+    WHITE="\033[38;5;15m"
+    GREEN="\033[38;5;47m"
+    BLUE="\033[38;5;31m"
+    RED="\033[38;5;161m"
+    PURPLE="\033[38;5;171m"
+    YELLOW="\033[38;5;226m"
+    RESET="\033[0m"
+
+    case ${UID} in
+      0) #root
+        BACKGROUND_COLOR=""
+        FOREGROUND_COLOR="${RED}"
+        USER_COLOR="${RED}"
+        ;;
+      *)
+        BACKGROUND_COLOR=""
+        FOREGROUND_COLOR="${DARKWHITE}"
+        USER_COLOR="${BLUE}"
+        ;;
+    esac
+
+    if command -v git &>/dev/null; then
+      is_git_directory() {
+        git rev-parse --is-inside-work-tree &>/dev/null
+      }
+
+      get_branch_name() {
+        git rev-parse --abbrev-ref HEAD 2>/dev/null
+      }
+
+      has_staged_changes() {
+        ! git diff --cached --no-ext-diff --quiet --exit-code 2>/dev/null
+      }
+
+      has_unstaged_changes() {
+        ! git diff --no-ext-diff --quiet --exit-code 2>/dev/null
+      }
+
+      has_untracked_files() {
+        [ -n "$(git ls-files --others --exclude-standard)" ]
+      }
+
+      has_unpushed_commits() {
+        local branch_name=$(get_branch_name)
+        local remote_ref="refs/remotes/origin/${branch_name}"
+        local commit_count=$(git rev-list "${remote_ref}"..HEAD --count 2>/dev/null)
+        [ "$commit_count" -gt 0 ]
+      }
+
+      git_prompt() {
+        local branch_name
+        local indicator=" "
+        is_git_directory || return
+
+        branch_name=$(get_branch_name)
+
+        if has_unpushed_commits; then
+          REPO_COLOR="${PURPLE}"
+          indicator="${indicator}^"
+        fi
+
+        if has_staged_changes; then
+          REPO_COLOR="${YELLOW}"
+          indicator="${indicator}~"
+        fi
+
+        if has_unstaged_changes || has_untracked_files; then
+          REPO_COLOR="${RED}"
+          indicator="${indicator}+"
+        fi
+
+        if [[ ! "${indicator}" =~ [\+\~\^] ]]; then
+          REPO_COLOR="${GREEN}"
+          indicator=""
+        fi
+
+        echo " | ${REPO_COLOR}${branch_name}${indicator:+$indicator}${RESET}"
+      }
+    fi
+
+    COLOR=${FOREGROUND_COLOR}${BACKGROUND_COLOR}
+
+    # ref. https://orebibou.com/ja/home/201810/20181002_001/
+    function update_prompt() {
+      local exit_status=$?
+      if [ $exit_status -eq 0 ]; then
+        PROMPT_COLOR="${BLUE}"
+      else
+        PROMPT_COLOR="${RED}"
+      fi
+      PS1="${COLOR} $(get_formatted_directory_path)$(git_prompt) ${RESET}${PROMPT_COLOR}〉${RESET}"
+      local rp_id=$(whoami)
+      local rp_host=$(hostname -s)
+      local rp_date=$(date +"%a %d")
+      local rp_time=$(date "+%H:%M:%S")
+      local num=$(($COLUMNS - ${#rp_id} - ${#rp_host} - ${#rp_date} - ${#rp_time} - 10))
+      printf "%${num}s${USER_COLOR}${rp_id} ${COLOR}|${COLOR}${GREEN} ${rp_host} ${COLOR}|${COLOR} ${rp_date} ${COLOR}|${COLOR} ${rp_time}${RESET}\\r" ''
+    }
+
+    PROMPT_COMMAND=update_prompt
+    ;;
+  *)
+    ;;
+esac
+
+# * »»» prompt reset (time sync) -------/
+
+#reset_tmout() { TMOUT=$[1-$(date +%s)%1]; }
+#precmd_functions+=(reset_tmout)
+#redraw_tmout() { printf "\r"; reset_tmout; }
+
+# * ««« --------------------------------/
+
+# ]]
+# * «« -------------------------------------------------/
+
+# ]
+
+
+
+
+
+# * »   [3] os
+# -------------------------------------------                           /
+# ---------------------------------------------------------------------/
+# [
+
+case "${OSTYPE}" in #uname http://en.wikipedia.org/wiki/Uname
+  # linux
+  linux*)
+    if [ -d "${HOME}/usr/bin" ]; then
+      export PATH="${HOME}/usr/bin:${PATH}"
+    fi
+    if [ -d "${HOME}/bin" ]; then
+      export PATH="${HOME}/bin:${PATH}"
+    fi
+    if [ -d "${HOME}/.bin" ]; then
+      export PATH="${HOME}/.bin:${PATH}"
+    fi
+    if [ -e "${HOME}/.tmux.conf" ] && [ -x "$(command -v tmux)" ]; then
+      if [ -z "$TMUX" ] && [ "$-" != "*l*" ]; then # l option = login shell
+        ID="$(tmux list-sessions 2>/dev/null)"
+        if [ -z "$ID" ]; then
+          tmux new-session
+        fi
+        if [ -x "$(command -v fzf)" ]; then
+          create_new_session="Create New Session"
+          ID="$ID\n${create_new_session}:"
+          ID=$(echo "$ID" | fzf | cut -d: -f1)
+          if [ "$ID" == "${create_new_session}" ]; then
+            tmux new-session
+          elif [ -n "$ID" ]; then
+            echo "$ID"
+            tmux attach-session -t "$ID"
+          else
+            :
+          fi
+        fi
+      fi
+    fi ;;
+  # mac os
+  darwin*)
+    alias ls='ls -G -F -L' ;;
+  # windows
+  CYGWIN*) ;;
+  msys*)
+    alias shutdown='shutdown -s -f'
+    if [ -x "$(command -v winpty)" ]; then
+      alias cl='winpty cl'
+      alias diskpart='winpty diskpart'
+      alias sdelete='winpty sdelete'
+      alias mysql='winpty mysql'
+    fi ;;
+esac
+
+
+
+# ]
+
+
+
+
+
+# * »   [4] local setting
+# -------------------------------------------                           /
+# ---------------------------------------------------------------------/
+# [
+
+source_file $HOME/.bashrc.local
+
+if [ -f "${HOME}/.bash-git-prompt/gitprompt.sh" ]; then
+  GIT_PROMPT_ONLY_IN_REPO=1
+  source "${HOME}/.bash-git-prompt/gitprompt.sh"
+fi
+
+# ]

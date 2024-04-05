@@ -1,0 +1,48 @@
+nnoremap ; :
+nnoremap j 5j
+nnoremap k 5k
+nnoremap r <C-R>
+nnoremap <BS> <A-Left>
+nnoremap H <A-Left>
+nnoremap L <A-Right>
+nnoremap h gT
+nnoremap l gt
+nnoremap l :js gBrowser.mTabContainer.advanceSelectedTab(1, true)<CR>
+nnoremap h :js gBrowser.mTabContainer.advanceSelectedTab(-1, true)<CR>
+nnoremap <ESC><ESC> :nohlsearch<CR><ESC>
+nnoremap <S-L> :tabmove! +1<CR>
+nnoremap <S-H> :tabmove! -1<CR>
+nnoremap <C-A> i<C-A>
+nnoremap <C-C> i<C-C>
+nnoremap <C-V> i<C-V>
+inoremap <C-A> <Insert><C-A><Insert>
+nnoremap d <nop>
+nnoremap <C-K> <nop>
+nnoremap <C-W> d
+
+set focuscontent
+
+set hintchars="hjklasdfgyuiopqwertnmzxcvb"
+set gui=noaddons,nobookmarks,nomenu,navigation,tabs
+hi -append Hint text-transform: uppercase;
+set complete=sl
+
+javascript <<EOM
+liberator.modules.commands.addUserCommand(["togglepin"], "add pin to current tab",
+function(){
+		var currentTab = gBrowser.mCurrentTab
+		if(currentTab.pinned){
+				gBrowser.unpinTab(currentTab)
+		}
+		else{
+				gBrowser.pinTab(currentTab)
+		}
+});
+EOM
+nnoremap : :togglepin<CR>
+
+hi Hint font-family: Arial; font-size: 15px; font-weight: bold; text-shadow: -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black, 1px 1px 2px black; color: #33cccc;
+hi HintElem color: gray; background-color: #a1e4e6;
+hi HintActive color: black; background-color: #ff8700;
+
+hi ErrorMsg color:white; background-color: #ec6aa1;

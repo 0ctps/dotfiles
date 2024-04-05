@@ -1,0 +1,555 @@
+#               ,______________________,
+#               |****;/''   /*********/
+#               |**7'      /*********/
+#               |;(       /*********/
+#                       /'********/'
+#                      /*********/
+#                    /'********/'
+#                   /*********/       _.
+#                 /'********/'       )*|
+#                /*********/       ,7**|
+#               /*********/______/*****|
+#               """"""""""""""""""""""""
+#               __              _
+#               \ \      ___ __| |_
+#                > >    |_ /(_-< ' \
+#               /_/     /__|___/_||_|     ___
+#                                        |___|
+
+#       * author    : 0
+#       * ver       : 3.54
+
+
+
+
+
+# * »   [1] general
+# -------------------------------------------                            /
+# ----------------------------------------------------------------------/
+# [
+
+export EDITOR=vim
+export LANG=en_US
+export ENCODE=UTF-8
+export LC_CTYPE=$LANG.$ENCODE
+export LC_ALL=$LANG.$ENCODE
+export KCODE=u
+
+bindkey -v
+bindkey -M viins 'jj' vi-cmd-mode
+
+setopt auto_pushd
+setopt auto_cd
+setopt no_beep
+setopt no_list_beep
+alias history='history -E'
+
+# ref. https://rcmdnk.com/blog/2017/10/13/computer-bash-zsh
+function source_file {
+  if [ $# -lt 1 ]; then
+    echo "ERROR!!! source_file is called w/o an argument"
+    return
+  fi
+  for arg in "$@"; do
+    if [ -r "$arg" ]; then
+      . "$arg"
+    fi
+  done
+}
+# end
+
+
+
+# * »»  complement -------------------------------------/
+# [[
+
+zmodload zsh/mapfile
+autoload -Uz compinit; compinit
+setopt auto_list 
+setopt auto_menu 
+setopt list_packed 
+setopt list_types
+bindkey "^[[Z" reverse-menu-complete
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+setopt correct
+setopt extended_glob
+unsetopt caseglob
+unsetopt nomatch
+autoload predict-on
+fpath=($ZDOTDIR/rc/completion $fpath)
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  history ----------------------------------------/
+# [[
+
+# ref. https://unix.stackexchange.com/questions/273861/unlimited-history-in-zsh
+HISTFILE=$HOME/.zsh_history
+HISTSIZE=10000000
+SAVEHIST=10000000
+
+setopt bang_hist                 # treat the '!' character specially during expansion.
+setopt extended_history          # write the history file in the ":start:elapsed;command" format.
+setopt inc_append_history        # write to the history file immediately, not when the shell exits.
+setopt share_history             # share history between all sessions.
+
+setopt hist_expire_dups_first    # expire duplicate entries first when trimming history.
+setopt hist_ignore_dups          # don't record an entry that was just recorded again.
+setopt hist_ignore_all_dups      # delete old recorded entry if new entry is a duplicate.
+setopt hist_find_no_dups         # do not display a line previously found.
+setopt hist_ignore_space         # don't record an entry starting with a space.
+setopt hist_save_no_dups         # don't write duplicate entries in the history file.
+setopt hist_reduce_blanks        # remove superfluous blanks before recording entry.
+setopt hist_verify               # don't execute immediately upon history expansion.
+setopt hist_beep                 # beep when accessing nonexistent history.
+
+autoload history-search-end
+zle -N history-beginning-search-backward-end history-search-end
+zle -N history-beginning-search-forward-end history-search-end
+bindkey "^P" history-beginning-search-backward-end
+bindkey "^N" history-beginning-search-forward-end
+function history-all { history -E 1 }
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  path -------------------------------------------/
+# [[
+
+if (( $+commands[go] )); then
+  if [ -e $HOME/.go ]; then
+    export GOPATH=$HOME/.go
+    export PATH=$GOPATH/bin:$PATH
+    export GO15VENDOREXPERIMENT=1
+  fi
+fi
+
+if [ -e $HOME/.cargo/bin ]; then
+  export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  plugin -----------------------------------------/
+# [[
+
+if (( $+commands[git] )); then
+  #
+fi
+
+#https://github.com/junegunn/fzf
+source_file $HOME/.fzf.zsh
+if (( $+commands[fzf] )); then
+  fe() {
+    local file
+    file=$(fzf --query="$1" --select-1 --exit-0)
+    [ -n "$file" ] && ${EDITOR:-vim} "$file"
+  }
+
+  fd() {
+    local dir
+    dir=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m) &&
+    cd "$dir"
+  }
+
+  fh() {
+    selected_command=$(([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s | sed 's/ *[0-9]* *//')
+    if [ -n "$ZSH_NAME" ]; then
+      print -s "$selected_command"
+    else
+      history -s "$selected_command"
+    fi
+    eval "$selected_command"
+  }
+
+  fkill() {
+    ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
+  }
+fi
+
+source_file ${HOME}/.enhancd/init.sh
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  alias -------------------------------------------/
+# [[
+
+alias v='vim'
+
+function runcpp () { g++ $1 && shift && ./a.out $@ }
+alias -s {c,cpp}=runcpp
+
+function extract() {
+  case $1 in
+    *.tar.gz|*.tgz) tar xzvf $1;;
+    *.tar.xz) tar Jxvf $1;;
+    *.zip) unzip $1;;
+    *.lzh) lha e $1;;
+    *.tar.bz2|*.tbz) tar xjvf $1;;
+    *.tar.Z) tar zxvf $1;;
+    *.gz) gzip -d $1;;
+    *.bz2) bzip2 -dc $1;;
+    *.Z) uncompress $1;;
+    *.tar) tar xvf $1;;
+    *.arj) unarj $1;;
+    *.rar) unrar $1;;
+  esac
+}
+alias -s {gz,tgz,zip,lzh,bz2,tbz,Z,tar,arj,xz,rar}=extract
+
+autoload -Uz zmv
+alias zmv='noglob zmv -W'
+alias fuck='eval $(thefuck $(fc -ln -1))'
+alias diff='diff -u'
+
+if (( $+commands[tmux] )); then
+  alias tl='tmux ls'
+  alias tk='tmux kill-session -t $1'
+  alias ta='tmux a'
+  alias tat='tmux a -t $1'
+fi
+
+
+# * »»» color --------------------------/
+
+alias ls='ls -F --color=auto --group-directories-first'
+
+# * »»»» cat
+if (( $+commands[pygmentize] )); then
+  alias cat='pygmentize -O style=monokai -f console256 -g'
+fi
+
+# * »»»» diff
+if (( $+commands[colordiff] )); then
+  alias diff='colordiff -u'
+fi
+
+# * »»»» less
+export MANPAGER='less -R'
+function man() {
+  env \
+    LESS_TERMCAP_mb=$(printf "\e[1;31m") \
+    LESS_TERMCAP_md=$(printf "\e[1;31m") \
+    LESS_TERMCAP_me=$(printf "\e[0m") \
+    LESS_TERMCAP_se=$(printf "\e[0m") \
+    LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
+    LESS_TERMCAP_ue=$(printf "\e[0m") \
+    LESS_TERMCAP_us=$(printf "\e[1;32m") \
+    man "$@"
+}
+if (( $+commands[unbuffered] )); then
+  function less_with_unbuffer() {
+    unbuffered "$@" |& less -SR
+  }
+    alias ul=less_with_unbuffer
+fi
+
+# * »»»» grep
+alias grep='grep --color'
+
+# * »»»» grc
+if (( $+commands[grc] )); then
+  alias mount='grc mount'
+  alias ifconfig='grc ifconfig'
+  alias dig='grc dig'
+  alias ldap='grc ldap'
+  alias netstat='grc netstat'
+  alias ping='grc ping'
+  alias ps='grc ps'
+  alias traceroute='grc traceroute'
+  alias gcc='grc gcc'
+  alias g++='grc g++'
+fi
+
+# * ««« --------------------------------/
+
+function cd() {
+  builtin cd $@ && ls;
+}
+
+
+# ]]
+# * «« -------------------------------------------------/
+
+# ]
+
+
+
+
+
+# * »   [2] look
+# -------------------------------------------                           /
+# ---------------------------------------------------------------------/
+# [
+
+autoload -Uz vcs_info
+setopt transient_rprompt
+setopt prompt_subst
+
+
+
+# * »»  theme ------------------------------------------/
+# [[
+
+autoload -U colors; colors
+export TERM=xterm-256color
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  ls color ---------------------------------------/
+# [[
+
+export LSCOLORS=gxfxcxdxbxegedabagacad
+export LS_COLORS='no=00;38;5;244:rs=0:di=00;38;5;33:ln=00;38;5;37:mh=00:pi=48;5;230;38;5;136;01:so=48;5;230;38;5;136;01:do=48;5;230;38;5;136;01:bd=48;5;230;38;5;244;01:cd=48;5;230;38;5;244;01:or=48;5;235;38;5;160:su=48;5;160;38;5;230:sg=48;5;136;38;5;230:ca=30;41:tw=48;5;64;38;5;230:ow=48;5;235;38;5;33:st=48;5;33;38;5;230:ex=00;38;5;64:'
+if ! [[ $OSTYPE = msys* ]]; then
+  if [ -e $ZDOTDIR/rc/dircolors ]; then
+    if (( $+commands[dircolors] )); then
+      eval $(dircolors $ZDOTDIR/rc/dircolors)
+    elif (( $+commands[gdircolors] )); then
+      eval $(gdircolors $ZDOTDIR/rc/dircolors)
+    fi
+  fi
+fi
+export ZLS_COLORS=$LS_COLORS
+export CLICOLOR=true
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
+# * »»  prompt -----------------------------------------/
+# [[
+
+PROMPT="[%~]%(!,#,$) "
+RPROMPT="[%n|%m|%w|%*]"
+SPROMPT="%r is correct [n,y,a,e]: "
+
+if [[ $TERM = xterm* ]];then
+  get_formatted_directory_path() {
+    local current_dir=$PWD
+    local home_dir=$HOME
+    local delimiter=" | "
+    if [[ "$current_dir" = "$home_dir" ]]; then
+      echo "~"
+      return
+    fi
+    if [[ "$current_dir" = "$home_dir"* ]]; then
+      current_dir="~${current_dir:${#home_dir}}"
+    fi
+    local dir_array=("${(s:/:)current_dir}")
+    dir_array=(${dir_array:#})
+    if [ ${#dir_array[@]} -le 5 ]; then
+      if [ ${#dir_array[@]} -ge 1 ]; then
+        local output="${dir_array[1]}"
+        if [ ${#dir_array[@]} -ne 1 ]; then
+          for i in {2..${#dir_array[@]}}; do
+            output="${output}${delimiter}${dir_array[$i]}"
+          done
+        fi
+      else
+        local output="/"
+      fi
+    else
+      output="${dir_array[1]}${delimiter}${dir_array[2]}${delimiter}...${delimiter}${dir_array[-3]}${delimiter}${dir_array[-2]}${delimiter}${dir_array[-1]}"
+    fi
+    echo "$output"
+  }
+
+  local DARKGRAY=237
+  local DARKWHITE=250
+  local WHITE=15
+  local GREEN=47
+  local BLUE=31
+  local RED=161
+  local PURPLE=171
+  local YELLOW=226
+  local RESET="%f%k"
+
+  case ${UID} in
+    0) #root
+      local BACKGROUND_COLOR="%k"
+      local FOREGROUND_COLOR="%F{${RED}}"
+      local USER_COLOR="%F{${RED}}"
+      ;;
+    *)
+      local BACKGROUND_COLOR="%k"
+      local FOREGROUND_COLOR="%F{${DARKWHITE}}"
+      local USER_COLOR="%F{${BLUE}}"
+      ;;
+  esac
+
+  if [[ $+commands[git] ]]; then
+    is_git_directory() {
+      git rev-parse --is-inside-work-tree &>/dev/null
+    }
+    get_branch_name() {
+      git rev-parse --abbrev-ref HEAD 2>/dev/null
+    }
+    has_staged_changes() {
+      ! git diff --cached --no-ext-diff --quiet --exit-code 2>/dev/null
+    }
+    has_unstaged_changes() {
+      ! git diff --no-ext-diff --quiet --exit-code 2>/dev/null
+    }
+    has_untracked_files(){
+      [ -n "$(git ls-files --others --exclude-standard)" ]
+    }
+    has_unpushed_commits() {
+      local branch_name=$(get_branch_name)
+      local remote_ref="refs/remotes/origin/${branch_name}"
+      local commit_count=$(git rev-list "${remote_ref}"..HEAD --count 2>/dev/null)
+      [ "$commit_count" -gt 0 ]
+    }
+    git_prompt() {
+      local branch_name
+      local indicator=" "
+      is_git_directory || return
+      branch_name=$(get_branch_name)
+      if has_unpushed_commits; then
+        REPO_COLOR="%F{${PURPLE}}"
+        indicator="${indicator}^"
+      fi
+      if has_staged_changes; then
+        REPO_COLOR="%F{${YELLOW}}"
+        indicator="${indicator}~"
+      fi
+      if has_unstaged_changes || has_untracked_files; then
+        REPO_COLOR="%F{${RED}}"
+        indicator="${indicator}+"
+      fi
+      if [[ ! ${indicator} =~ [\+\~\^] ]]; then
+        REPO_COLOR="%F{${GREEN}}"
+        indicator=""
+      fi
+      echo " | ${REPO_COLOR}${branch_name}${indicator:+$indicator}${RESET}"
+    }
+  fi
+
+  local COLOR=${FOREGROUND_COLOR}${BACKGROUND_COLOR}
+
+  RPROMPT="${USER_COLOR} %n ${COLOR}|${COLOR}%F{${GREEN}} %m ${COLOR}|${COLOR} %w ${COLOR}|${COLOR} %*${RESET}"
+  PROMPT="${COLOR} %~ ${COLOR}${RESET}%(?.%F{${BLUE}}.%F{${RED}})〉${RESET}"
+
+  function u_prompt() {
+    #if [[ ( $+commands[python] || $+commands[python3] ) && -e $ZDOTDIR/rc/plugin/prompt.py && ! -f ${HOME}/.zsh.lowspec ]]; then
+    #  local RETURN=$?
+    #  PROMPT="$(~/.zsh/rc/plugin/prompt.py ${RETURN})"
+    #else
+      local PROMPTBODY="${COLOR} "$(get_formatted_directory_path)"$(git_prompt) ${RESET}%(?.%F{${BLUE}}.%F{${RED}})〉${RESET}"
+      PROMPT=${PROMPTBODY}
+    #fi
+  }
+  precmd() { u_prompt }
+fi
+
+
+
+# * »»» prompt reset (time sync) -------/
+
+zmodload zsh/datetime
+reset_tmout() { TMOUT=$[1-EPOCHSECONDS%1] }
+precmd_functions=(${precmd_functions} reset_tmout)
+redraw_tmout() { zle reset-prompt; reset_tmout }
+TRAPALRM() { redraw_tmout }
+
+# * ««« --------------------------------/
+
+# ]]
+# * «« -------------------------------------------------/
+
+# ]
+
+
+
+
+
+# * »   [3] os
+# -------------------------------------------                           /
+# ---------------------------------------------------------------------/
+# [
+
+case ${OSTYPE} in #uname http://en.wikipedia.org/wiki/Uname
+  # linux
+  linux*)
+    if [ -d ${HOME}/usr/bin ]; then
+      export PATH=${HOME}/usr/bin:${PATH}
+    fi
+    if [ -d ${HOME}/bin ]; then
+      export PATH=${HOME}/bin:${PATH}
+    fi
+    if [ -d ${HOME}/.bin ]; then
+      export PATH=${HOME}/.bin:${PATH}
+    fi
+    if [ -e ${HOME}/.tmux.conf ] && (( $+commands[tmux] )); then
+      if [[ -z $TMUX ]] && [[ $- != *l* || -n $WSL_DISTRO_NAME ]]; then # l option = login shell
+        ID="`tmux list-sessions 2>/dev/null`"
+        if [[ -z "$ID" ]]; then
+          tmux new-session
+        fi
+        if (( $+commands[fzf] )); then
+          create_new_session="Create New Session"
+          ID="$ID\n${create_new_session}:"
+          ID="`echo $ID | fzf | cut -d: -f1`"
+          if [[ "$ID" == "${create_new_session}" ]]; then
+            tmux new-session
+          elif [[ -n "$ID" ]]; then
+            echo $ID
+            tmux attach-session -t "$ID"
+          else
+            :
+          fi
+        fi
+      fi
+    fi ;;
+  # mac os
+  darwin*)
+    alias ls='ls -G -F -L' ;;
+  #windows
+  CYGWIN*) ;;
+  msys*)
+    alias shutdown='shutdown -s -f'
+    if (( $+commands[winpty] )); then
+      alias cl='winpty cl'
+      alias diskpart='winpty diskpart'
+      alias sdelete='winpty sdelete'
+      alias mysql='winpty mysql'
+    fi ;;
+esac
+
+# ]
+
+
+
+
+
+
+# * »   [4] local setting
+# -------------------------------------------                           /
+# ---------------------------------------------------------------------/
+# [
+
+source_file $ZDOTDIR/rc/function.zsh
+
+source_file ${HOME}/.syntax/zsh-syntax-highlighting.zsh
+
+if [ ! $(ls ${HOME}/.cache/zsh | wc -l) -eq 0 ];then
+  source_file ${HOME}/.cache/zsh/*
+fi
+
+# ]

@@ -1,0 +1,243 @@
+# * >>>  useful ------------------------/
+# [[[
+
+[[plugins]]
+repo= 'Shougo/dein.vim'
+
+[[plugins]]
+repo = 'tpope/vim-fugitive'
+
+[[plugins]]
+repo = 'dannyob/quickfixstatus'
+
+# ]]]
+# * <<< --------------------------------/
+
+
+
+# * >>>  syntax check ------------------/
+# [[[
+
+#[[plugins]]
+#repo = 'Shougo/context_filetype.vim'
+
+#[[plugins]]
+#repo = 'osyo-manga/vim-precious'
+#depends = 'context_filetype.vim'
+
+# ]]]
+# * <<< --------------------------------/
+
+
+
+# * >>>  selector ----------------------/
+# [[[
+
+# denite [[[[
+[[plugins]]
+repo = 'Shougo/denite.nvim'
+hook_add = '''
+	nn ff :<c-u>Denite
+	nn <silent> fd :<c-u>Denite file_rec<cr>
+	nn <silent> fb :<c-u>Denite buffer<cr>
+	nn <silent> fj :<c-u>Denite grep<cr>
+	nn <silent> fh :<c-u>Denite help<cr>
+'''
+#]]]]
+
+# ]]]
+# * <<< --------------------------------/
+
+
+
+# * >>>  lang --------------------------/
+# [[[
+
+# c [[[[
+# ]]]]
+
+# cpp [[[[
+[[plugins]]
+repo = 'vim-jp/cpp-vim'
+on_ft = 'cpp'
+# ]]]]
+
+# python [[[[
+[[plugins]]
+repo = 'hynek/vim-python-pep8-indent'
+on_ft = 'python'
+# ]]]]
+
+# golang [[[[
+[[plugins]]
+repo = 'vim-jp/go-vim'
+on_ft = 'go'
+
+[[plugins]]
+repo = 'fatih/vim-go'
+on_ft = 'go'
+
+[[plugins]]
+repo = 'vim-jp/vim-go-extra'
+on_ft = 'go'
+# ]]]]
+
+# haskell [[[[
+[[plugins]]
+repo = 'dag/vim2hs'
+on_ft = 'haskell'
+# ]]]]
+
+# rust [[[[
+[[plugins]]
+repo = 'rust-lang/rust.vim'
+on_ft = 'rust'
+# ]]]]
+
+# shell_script [[[[
+[[plugins]]
+repo = 'dag/vim-fish'
+on_ft = 'fish'
+# ]]]]
+
+# toml [[[[
+[[plugins]]
+repo = 'cespare/vim-toml'
+on_ft = 'toml'
+# ]]]]
+
+# japanese [[[[
+# kaoriya-vimrc [[[[
+#[[plugins]]
+#repo = 'gist:koron/1436273'
+#if	= '''has('kaoriya')'''
+# ]]]]
+
+# ]]]
+# * <<< --------------------------------/
+
+
+
+# * >>>  file --------------------------/
+# [[[
+
+[[plugins]]
+repo = 'thinca/vim-localrc'
+
+[[plugins]]
+repo = 'scrooloose/nerdtree'
+hook_add = '''
+	nn <silent> no :<c-u>NERDTreeToggle<cr>
+'''
+
+# ]]]
+# * <<< --------------------------------/
+
+
+
+# * >>>  look --------------------------/
+# [[[
+
+[[plugins]]
+repo = 'itchyny/lightline.vim'
+hook_add = '''
+	let g:lightline = {
+		\ 'colorscheme'			 : 'wombat',
+		\ 'component'			 : {
+		\	 'readonly'			 : '%{&readonly?#\u2b64#:##}', },
+		\ 'mode_map'			 : {'c': 'NORMAL'},
+		\ 'active'				 : {
+		\	 'left'				 : [ [ 'mode', 'paste' ], [ 'fugitive', 'filename' ] ] },
+		\ 'component_function'	 : {
+		\	 'modified'			 : 'MyModified',
+		\	 'readonly'			 : 'MyReadonly',
+		\	 'fugitive'			 : 'MyFugitive',
+		\	 'filename'			 : 'MyFilename',
+		\	 'fileformat'		 : 'MyFileformat',
+		\	 'filetype'			 : 'MyFiletype',
+		\	 'fileencoding'		 : 'MyFileencoding',
+		\	 'mode'				 : 'MyMode' },
+		\ }
+
+	fu! MyModified()
+		retu &ft =~ 'help\|VimFiler\|gundo' ? '' : &modified ? '+' : &modifiable ? '' : '-'
+	endf
+
+	fu! MyReadonly()
+		retu &ft !~? 'help\|VimFiler\|gundo' && &readonly ? 'x' : ''
+	endf
+
+	fu! MyFilename()
+		retu ('' != MyReadonly() ? MyReadonly() . ' ' : '') .
+		\(&ft == 'VimFiler' ? VimFiler#get_status_string() :
+		\ &ft == 'vimshell' ? vimshell#get_status_string() :
+		\'' != expand('%:t') ? expand('%:t') : '[No Name]') .
+		\('' != MyModified() ? ' ' . MyModified() : '')
+	endf
+
+	fu! MyFugitive()
+		try
+			if &ft !~? 'VimFiler\|gundo' && exists('*fugitive#head')
+				retu fugitive#head()
+			endif
+			catch
+		endt
+		retu ''
+	endf
+
+	fu! MyFileformat()
+		retu winwidth(0) > 70 ? &fileformat : ''
+	endf
+
+	fu! MyFiletype()
+		retu winwidth(0) > 70 ? (strlen(&filetype) ? &filetype : 'no ft') : ''
+	endf
+
+	fu! MyFileencoding()
+		retu winwidth(0) > 70 ? (strlen(&fenc) ? &fenc : &enc) : ''
+	endf
+
+	fu! MyMode()
+		retu winwidth(0) > 60 ? lightline#mode() : ''
+	endf
+'''
+
+#[[plugins]]
+#repo = 'vim-jp/vimdoc-ja'
+#on_ft = 'help'
+
+# > colorscheme
+[[plugins]]
+repo = 'w0ng/vim-hybrid'
+hook_add = '''
+	se bg=dark
+	au fau VimEnter * nested color hybrid
+'''
+
+# ]]]
+# * <<< --------------------------------/
+
+
+
+# * >>>  joke --------------------------/
+# [[[
+
+[[plugins]]
+repo = 'thinca/vim-scouter'
+
+# ]]]
+# * <<< --------------------------------/
+
+
+[[plugins]]
+repo = 'Yggdroot/indentLine'
+hook_add = '''
+	"let g:indentLine_color_term = 0
+	"let g:indentLine_color_gui = '#000000'
+	let g:indentLine_char = '|'
+'''
+
+# ]]
+# * << -------------------------------------------------/
+
+# ]
