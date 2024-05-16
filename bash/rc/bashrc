@@ -463,7 +463,7 @@ case "$TERM" in
       else
         PROMPT_COLOR="${RED}"
       fi
-      PS1="${COLOR} $(get_formatted_directory_path)$(git_prompt) ${RESET}${PROMPT_COLOR}〉${RESET}"
+      PS1="${COLOR} $(get_formatted_directory_path)$(git_prompt) ${RESET}${PROMPT_COLOR}⟩ ${RESET}"
       local rp_id=$(whoami)
       local rp_host=$(hostname -s)
       local rp_date=$(date +"%a %d")
