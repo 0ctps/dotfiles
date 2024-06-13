@@ -232,12 +232,12 @@ cd_func() {
 
 # * »»»» cat
 if [ -x "$(command -v pygmentize)" ]; then
-  alias cat='pygmentize -O style=monokai -f console256 -g'
+  alias ccat='pygmentize -O style=monokai -f console256 -g'
 fi
 
 # * »»»» diff
 if [ -x "$(command -v colordiff)" ]; then
-  alias diff='colordiff -u'
+  alias cdiff='colordiff -u'
 fi
 
 # * »»»» less
