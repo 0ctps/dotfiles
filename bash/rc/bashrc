@@ -266,13 +266,15 @@ alias grep='grep --color'
 # * »»»» grc
 if [ -x "$(command -v grc)" ]; then
   alias mount='grc mount'
-  alias ifconfig='grc ifconfig'
-  alias dig='grc dig'
+  alias df='grc df'
   alias ldap='grc ldap'
+  alias dig='grc dig'
+  alias ifconfig='grc ifconfig'
   alias netstat='grc netstat'
   alias ping='grc ping'
-  alias ps='grc ps'
+  alias ip='grc ip'
   alias traceroute='grc traceroute'
+  alias ps='grc ps'
   alias gcc='grc gcc'
   alias g++='grc g++'
 fi
