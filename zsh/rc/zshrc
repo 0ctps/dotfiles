@@ -227,12 +227,12 @@ alias ls='ls -F --color=auto --group-directories-first'
 
 # * »»»» cat
 if (( $+commands[pygmentize] )); then
-  alias cat='pygmentize -O style=monokai -f console256 -g'
+  alias ccat='pygmentize -O style=monokai -f console256 -g'
 fi
 
 # * »»»» diff
 if (( $+commands[colordiff] )); then
-  alias diff='colordiff -u'
+  alias cdiff='colordiff -u'
 fi
 
 # * »»»» less
