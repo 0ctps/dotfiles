@@ -3,17 +3,17 @@
 set -Ceuo pipefail
 trap exit ERR
 
-declare -r scriptname=$(basename ${0})
+declare -r scriptname=$(basename "${0}")
 declare -r version="4.3.1"
 
-declare -r workdir=$(dirname $(readlink -f ${scriptname}))
+declare -r workdir=$(dirname $(readlink -f "${scriptname}"))
 declare -r dothome="${HOME}/.dot"
 
 declare -a flag=()
 
 msg()
 {
-  if [ ${1} = "input" ]; then
+  if [ "${1}" = "input" ]; then
     read -p "press [enter] to ${@:2}." KEY
   else
     case ${1} in
@@ -70,7 +70,7 @@ msg()
     local footer=" ${footer}\n"
 
     shift
-    printf "${header}${@}${footer}"
+    printf "%s%s%s" "$header" "$@" "$footer"
   fi
 }
 
@@ -105,7 +105,7 @@ EOF
 }
 
 # ref. https://qiita.com/b4b4r07/items/dcd6be0bb9c9185475bb
-for opt in ${@}
+for opt in "${@}"
 do
   case ${opt} in
     '-h'|'--help'|'--usage'|'help')
@@ -159,7 +159,7 @@ do
 done
 
 flag+=("")
-if [ -z ${flag} ]; then
+if [ -z "${flag}" ]; then
   msg warn "Installation target has not been specified."
   msg msg "Proceeding with the installation using a recommended configuration."
   flag+=("ssh" "vim" "zsh")
@@ -208,13 +208,13 @@ setconf ()
   local -a filepath=()
   local -a linkpath=()
 
-  for c in ${option[@]}
+  for c in "${option[@]}"
   do
     case ${c} in
       dir)
         local dirpath="${HOME}/${makedir}"
-        if [ ! -d ${dirpath} ]; then
-          mkdir -p ${dirpath}
+        if [ ! -d "${dirpath}" ]; then
+          mkdir -p "${dirpath}"
           msg success "mkdir ${dirpath}"
         else
           msg " skip" "${dirpath} is already exist. [directory]"
@@ -222,38 +222,38 @@ setconf ()
       ;;
       link)
         if [ ${#filename[@]} = ${#linkname[@]} ]; then
-          for n in ${filename[@]}
+          for n in "${filename[@]}"
           do
             filepath+=("${dothome}/${dirname}/${n}")
           done
-          for n in ${linkname[@]}
+          for n in "${linkname[@]}"
           do
             linkpath+=("${HOME}/${n}")
           done
         fi
-        for ((i=0;${i}<=${#filepath[@]}-1;i++))
+        for ((i=0;"${i}"<=${#filepath[@]}-1;i++))
         do
-          if [ ${1} = "tmux" ]; then
+          if [ "${1}" = "tmux" ]; then
             msg msg "Compile tmux plugin"
-            if [ ! -e ${HOME}/${filename} ]; then
+            if [ ! -e "${HOME}"/"${filename}" ]; then
               msg msg "Installing tmux-config..."
               if ! type cmake >/dev/null 2>&1; then
                 msg error "'cmake' is NOT installed on your system.\nTo install it, you might want to execute a command similar to the following:\nsudo apt install cmake build-essential"
                 msg input "skip."
                 continue
               else
-                cd ${dothome}/${dirname}/vendor/
+                cd "${dothome}/${dirname}/vendor/"
                 git clone https://github.com/thewtex/tmux-mem-cpu-load/
                 cd tmux-mem-cpu-load && cmake . && make && sudo make install
-                cd ${dothome}
+                cd "${dothome}"
                 msg msg "done."
               fi
             else
               msg msg "skip."
             fi
           fi
-          if [ ! -e ${linkpath[${i}]} ]; then
-            ln -s ${filepath[${i}]} ${linkpath[$i]}
+          if [ ! -e "${linkpath[${i}]}" ]; then
+            ln -s "${filepath[${i}]}" "${linkpath[$i]}"
             msg success "link ${filepath[${i}]} -> ${linkpath[${i}]}"
           else
             msg " skip" "${linkpath[$i]} is already exist. [symbolic link]"
@@ -263,9 +263,9 @@ setconf ()
       ;;
     esac
   done
-  if [ ${1} = "zsh" ]; then
-    rm -rf ${HOME}/.syntax
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting ${HOME}/.syntax
+  if [ "${1}" = "zsh" ]; then
+    rm -rf "${HOME}"/.syntax
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting "${HOME}"/.syntax
   fi
 }
 
@@ -273,13 +273,13 @@ setconf ()
 
 ## MAIN ########################################################
 
-if [ ! -e ${dothome} ]; then
-  cp -r ${workdir} ${dothome}
+if [ ! -e "${dothome}" ]; then
+  cp -r "${workdir}" "${dothome}"
 fi
 
-if [ ! -e ${HOME}/.gitconfig ]; then
+if [ ! -e "${HOME}"/.gitconfig ]; then
   result=0
-  cp ${dothome}/.gitconfig ${HOME}/.gitconfig 2>&1 > /dev/null || result=$?
+  cp "${dothome}/.gitconfig" "${HOME}/.gitconfig" > /dev/null 2>&1 || result=$?
   if [[ ! ${result} -eq 0 ]]; then
     msg error "'.gitconfig' is NOT found on your computer."
     msg input "exit."
@@ -290,10 +290,10 @@ fi
 msg em "Start script: ${scriptname}"
 
 
-for f in ${flag[@]}
+for f in "${flag[@]}"
 do
   msg msg "Start initial setup for ${f}."
-  setconf ${f}
+  setconf "${f}"
   msg msg "Initial setup for ${f} has been completed."
 done
 
