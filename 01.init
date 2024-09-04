@@ -9,6 +9,11 @@ if ! type vim zsh git tmux cmake >/dev/null 2>&1;then
     sudo apt -y install vim zsh git tmux cmake build-essential avahi-daemon
     sudo systemctl start avahi-daemon
     sudo systemctl enable avahi-daemon
+  elif type dnf >/dev/null 2>&1; then
+    sudo dnf -y groupinstall "Development Tools"
+    sudo dnf -y install vim zsh git tmux cmake kernel-devel kernel-headers avahi
+    sudo systemctl start avahi-daemon
+    sudo systemctl enable avahi-daemon
   elif type yum >/dev/null 2>&1; then
     sudo yum -y groupinstall "Development Tools"
     sudo yum -y install vim zsh git tmux cmake kernel-devel kernel-headers avahi
