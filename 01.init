@@ -34,7 +34,7 @@ if [ ! -d ~/.ssh ];then
 fi
 
 if [ ! $(ssh git@github.com) ];then
-  ssh-keygen -t ed25519 -N "" -f ~/.ssh/github
+  ssh-keygen -t ed25519 -b 521 -C '' -f ~/.ssh/github
   cat << EOF >> ~/.ssh/config
 host github github.com
   Hostname github.com
