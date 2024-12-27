@@ -279,6 +279,15 @@ if [ -x "$(command -v grc)" ]; then
   alias g++='grc g++'
 fi
 
+
+# * »»»» ping
+alias ping='ping -n'
+
+# * »»»» docker
+alias d='docker'
+alias dc='docker compose'
+alias dcupgrade='docker compose pull && docker compose down && docker compose up -d && yes | docker system prune -a'
+
 # * ««« --------------------------------/
 
 
