@@ -70,7 +70,7 @@ msg()
     local footer=" ${footer}\n"
 
     shift
-    printf "%s%s%s" "$header" "$@" "$footer"
+    echo -ne "${header}${@}${footer}"
   fi
 }
 
