@@ -6,10 +6,10 @@ trap exit ERR
 echo "=== Checking Package Installation ==="
 if ! type vim zsh git tmux cmake >/dev/null 2>&1; then
  echo "Installing required packages..."
- if type apt >/dev/null 2>&1; then
+ if type apt-get >/dev/null 2>&1; then
   echo "Detected Debian/Ubuntu system"
-  sudo apt update
-  sudo apt -y install vim zsh git tmux cmake build-essential avahi-daemon
+  sudo apt-get update
+  sudo apt-get -y install vim zsh git tmux cmake build-essential avahi-daemon
   sudo systemctl start avahi-daemon
   sudo systemctl enable avahi-daemon
  elif type dnf >/dev/null 2>&1; then
