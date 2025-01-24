@@ -123,6 +123,10 @@ if [ -e $HOME/.cargo/bin ]; then
  export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
+if [ -e $HOME/.scripts.d ]; then
+  export PATH="$HOME/.scripts.d:$PATH"
+fi
+
 # ]]
 # * «« -------------------------------------------------/
 

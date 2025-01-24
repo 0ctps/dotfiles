@@ -171,8 +171,8 @@ setconf ()
     bash)
       local dirname="bash"
       local makedir=".cache/${dirname}"
-      local -a filename=("bash_profile" "bashrc" ".")
-      local -a linkname=(".bash_profile" ".bashrc" ".${dirname}")
+      local -a filename=("bash_profile" "bashrc" "." "../scripts")
+      local -a linkname=(".bash_profile" ".bashrc" ".${dirname}" "scripts.d")
       local -a option=("dir" "link")
       ;;
     ssh)
@@ -196,8 +196,8 @@ setconf ()
     zsh)
       local dirname="zsh"
       local makedir=".cache/${dirname}"
-      local -a filename=("zshenv" ".")
-      local -a linkname=(".zshenv" ".${dirname}")
+      local -a filename=("zshenv" "." "../scripts")
+      local -a linkname=(".zshenv" ".${dirname}" ".scripts.d")
       local -a option=("dir" "link")
       ;;
     *)
