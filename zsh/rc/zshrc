@@ -461,7 +461,7 @@ if [[ $TERM = xterm* ]];then
 
   RPROMPT="${USER_COLOR} %n ${COLOR}|${COLOR}%F{${GREEN}} %m ${COLOR}|${COLOR} %w ${COLOR}|${COLOR} %*${RESET}"
   if [[ ( $+commands[python3] ) ]]; then
-    RPROMPT="${USER_COLOR} %n ${COLOR}|${COLOR}%F{${GREEN}} %m ($(python3 -c "import socket;print([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1])")) ${COLOR}|${COLOR} %w ${COLOR}|${COLOR} %*${RESET}"
+    RPROMPT="${USER_COLOR} %n ${COLOR}|${COLOR}%F{${GREEN}} %m ${COLOR}|${COLOR} $(python3 -c "import socket;print([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1])") ${COLOR}|${COLOR} %w ${COLOR}|${COLOR} %*${RESET}"
   fi
   PROMPT="${COLOR} %~ ${COLOR}${RESET}%(?.%F{${BLUE}}.%F{${RED}})〉${RESET}"
 
