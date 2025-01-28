@@ -127,6 +127,10 @@ if [ -e $HOME/.scripts.d ]; then
   export PATH="$HOME/.scripts.d:$PATH"
 fi
 
+if [ -e $HOME/.bin/bin ]; then
+  export PATH="$HOME/.bin/bin:$PATH"
+fi
+
 # ]]
 # * «« -------------------------------------------------/
 
