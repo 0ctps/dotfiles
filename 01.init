@@ -47,11 +47,11 @@ else
  echo "SSH directory already exists - Skipping creation"
 fi
 
-if ! grep -q "host github" ~/.ssh/config 2>/dev/null && ! ssh -T git@github.com 2>/dev/null; then
+if ! grep -q "host github" ~/.ssh/config 2>/dev/null && ! yes | ssh -T git@github.com 2>/dev/null; then
  echo "Setting up GitHub SSH access..."
  if [ ! -f ~/.ssh/github ]; then
   echo "Generating new SSH key"
-  ssh-keygen -t ed25519 -b 521 -C '' -f ~/.ssh/github
+  ssh-keygen -t ed25519 -b 521 -C '' -N '' -f ~/.ssh/github
  else
   echo "SSH key already exists - Skipping generation"
  fi
