@@ -487,8 +487,15 @@ case "$TERM" in
       local rp_host=$(hostname -s)
       local rp_date=$(date +"%a %d")
       local rp_time=$(date "+%H:%M:%S")
-      local num=$(($COLUMNS - ${#rp_id} - ${#rp_host} - ${#rp_date} - ${#rp_time} - 10))
-      printf "%${num}s${USER_COLOR}${rp_id} ${COLOR}|${COLOR}${GREEN} ${rp_host} ${COLOR}|${COLOR} ${rp_date} ${COLOR}|${COLOR} ${rp_time}${RESET}\\r" ''
+
+      if [ -x "$(command -v python3)" ]; then
+        local rp_ip=$(python3 -c "import socket;print([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1])")
+        local num=$(($COLUMNS - ${#rp_id} - ${#rp_host} - ${#rp_ip} - ${#rp_date} - ${#rp_time} - 12))
+        printf "%${num}s${USER_COLOR}${rp_id} ${COLOR}|${COLOR}${GREEN} ${rp_host} ${COLOR}|${COLOR} ${rp_ip} ${COLOR}|${COLOR} ${rp_date} ${COLOR}|${COLOR} ${rp_time}${RESET}\\r" ''
+      else
+        local num=$(($COLUMNS - ${#rp_id} - ${#rp_host} - ${#rp_date} - ${#rp_time} - 10))
+        printf "%${num}s${USER_COLOR}${rp_id} ${COLOR}|${COLOR}${GREEN} ${rp_host} ${COLOR}|${COLOR} ${rp_date} ${COLOR}|${COLOR} ${rp_time}${RESET}\\r" ''
+      fi
     }
 
     PROMPT_COMMAND=update_prompt
