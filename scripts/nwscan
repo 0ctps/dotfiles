@@ -1,18 +1,19 @@
 #!/bin/bash
 
-# Configuration
-MAX_PARALLEL_PINGS=50
-PING_TIMEOUT_SEC=0.1
-IPS_PER_LINE=9
+# Get the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Status icons
-ICON_ACTIVE="✅"
-ICON_INACTIVE="⬜"
+# Source required libraries
+source "${SCRIPT_DIR}/lib/config.sh"
+source "${SCRIPT_DIR}/lib/network.sh"
+source "${SCRIPT_DIR}/lib/display.sh"
 
+# Show usage information
 show_usage() {
     cat << EOF
-Usage: $0 [OPTIONS] <network_address>/<subnet_mask>
+Usage: $0 [OPTIONS] [<network_address>/<subnet_mask>]
 Scan a network range and display IP status.
+If no network address is specified, the default gateway's network will be scanned.
 
 Options:
   --inactive, -i   Show only inactive (unused) IP addresses
@@ -20,127 +21,19 @@ Options:
   --all, -l        Show all IP addresses (default)
 
 Examples:
-  $0 192.168.1.0/24
+  $0                      # Scan default gateway's network
+  $0 192.168.1.0/24      # Scan specific network
   $0 --inactive 10.0.0.0/16
   $0 -a 172.16.0.0/20
 EOF
     exit 1
 }
 
-is_valid_ip() {
-    local ip=$1
-    if [[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-        IFS='.' read -ra OCTETS <<< "$ip"
-        for octet in "${OCTETS[@]}"; do
-            if [[ $octet -gt 255 ]]; then
-                return 1
-            fi
-        done
-        return 0
-    else
-        return 1
-    fi
-}
-
-is_valid_subnet() {
-    local subnet=$1
-    if [[ $subnet =~ ^[0-9]+$ ]] && (( subnet >= 0 && subnet <= 32 )); then
-        return 0
-    else
-        return 1
-    fi
-}
-
-ip_to_decimal() {
-    local ip=$1
-    IFS='.' read -ra OCTETS <<< "$ip"
-    echo $((OCTETS[0] * 256**3 + OCTETS[1] * 256**2 + OCTETS[2] * 256 + OCTETS[3]))
-}
-
-decimal_to_ip() {
-    printf "%d.%d.%d.%d" $(($1>>24)) $(($1>>16&255)) $(($1>>8&255)) $(($1&255))
-}
-
-get_ip_part() {
-    local full_ip=$1
-    local subnet_mask=$2
-    local network_part=$(echo "$full_ip" | cut -d. -f1-$((subnet_mask / 8)))
-    local host_part=$(echo "$full_ip" | cut -d. -f$((subnet_mask / 8 + 1))-)
-    
-    if [[ $subnet_mask -le 8 ]]; then
-        echo "$full_ip"
-    elif [[ $subnet_mask -le 16 ]]; then
-        echo "${network_part}.${host_part}"
-    elif [[ $subnet_mask -le 24 ]]; then
-        echo "${host_part}"
-    else
-        echo "$(echo "$host_part" | cut -d. -f2)"
-    fi
-}
-
-check_ip_status() {
-    local ip=$1
-    local subnet_mask=$2
-    local ip_part=$(get_ip_part "$ip" "$subnet_mask")
-    if ping -c 1 -W "$PING_TIMEOUT_SEC" "$ip" &> /dev/null; then
-        echo "[$ip_part:$ICON_ACTIVE]"
-    else
-        echo "[$ip_part:$ICON_INACTIVE]"
-    fi
-}
-
-scan_network() {
-    local start_ip=$1
-    local end_ip=$2
-    local subnet_mask=$3
-    local results_file=$4
-
-    for ((ip=start_ip+1; ip<end_ip; ip++)); do
-        check_ip_status "$(decimal_to_ip $ip)" "$subnet_mask" >> "$results_file" &
-
-        while [ $(jobs -p | wc -l) -ge $MAX_PARALLEL_PINGS ]; do
-            sleep 0.1
-        done
-    done
-
-    wait
-}
-
-display_results() {
-    local filter=$1
-    local count=0
-    local max_width=0
-
-    # Find the maximum width of IP parts
-    while IFS=: read -r ip_part _; do
-        local width=${#ip_part}
-        if (( width > max_width )); then
-            max_width=$width
-        fi
-    done < "$results_file"
-
-    # Display results with aligned columns
-    while IFS=: read -r ip_part status; do
-        if [[ $filter == "all" ]] || \
-           [[ $filter == "inactive" && $status == "$ICON_INACTIVE" ]] || \
-           [[ $filter == "active" && $status == "$ICON_ACTIVE" ]]; then
-            printf "%-${max_width}s:%s " "$ip_part" "$status"
-            ((count++))
-            if (( count % IPS_PER_LINE == 0 )); then
-                echo
-            fi
-        fi
-    done < "$results_file"
-
-    if (( count % IPS_PER_LINE != 0 )); then
-        echo
-    fi
-}
-
+# Main function
 main() {
     local network=""
     local filter="all"
-
+    
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -156,51 +49,57 @@ main() {
                 fi
                 ;;
             *)
-                echo "Error: Unknown option '$1'"
-                show_usage
+                if [[ -n $1 ]]; then
+                    echo "Error: Unknown option '$1'"
+                    show_usage
+                fi
                 ;;
         esac
         shift
     done
-
+    
+    # If no network specified, use default gateway's network
     if [[ -z $network ]]; then
-        echo "Error: Network address is required."
-        show_usage
+        network=$(get_default_network)
+        echo "No network specified. Using default network: $network"
     fi
-
+    
     # Extract network address and subnet mask
     IFS='/' read -r ip_address subnet_mask <<< "$network"
-
+    
     # Validate inputs
     if ! is_valid_ip "$ip_address"; then
         echo "Error: Invalid IP address '$ip_address'"
         exit 1
     fi
-
+    
     if ! is_valid_subnet "$subnet_mask"; then
         echo "Error: Invalid subnet mask '$subnet_mask'"
         exit 1
     fi
-
+    
     # Calculate network range
     local ip_decimal=$(ip_to_decimal "$ip_address")
     local mask=$((0xffffffff << (32 - subnet_mask)))
     local network_start=$((ip_decimal & mask))
     local network_end=$((network_start | ~mask & 0xffffffff))
-
+    
     # Create temporary file for results
     results_file=$(mktemp)
-
+    
     echo "Scanning network $network..."
     scan_network "$network_start" "$network_end" "$subnet_mask" "$results_file"
-
-    echo "Scan complete. Results:"
+    
+    # Sort results
     sort -V "$results_file" > "${results_file}.sorted"
     mv "${results_file}.sorted" "$results_file"
-    display_results "$filter"
-
+    
+    # Display results
+    display_results "$filter" "$results_file"
+    
+    # Cleanup
     rm "$results_file"
 }
 
+# Execute main function
 main "$@"
-
