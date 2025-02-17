@@ -172,7 +172,7 @@ setconf ()
       local dirname="bash"
       local makedir=".cache/${dirname}"
       local -a filename=("bash_profile" "bashrc" "." "../scripts")
-      local -a linkname=(".bash_profile" ".bashrc" ".${dirname}" "scripts.d")
+      local -a linkname=(".bash_profile" ".bashrc" ".${dirname}" ".scripts.d")
       local -a option=("dir" "link")
       ;;
     ssh)
