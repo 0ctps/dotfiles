@@ -104,12 +104,99 @@ usage() {
 EOF
 }
 
+init() {
+echo "=== Checking Package Installation ==="
+if ! type vim zsh git tmux cmake >/dev/null 2>&1; then
+  echo "Installing required packages..."
+  if type apt-get >/dev/null 2>&1; then
+    echo "Detected Debian/Ubuntu system"
+    sudo apt-get update
+    sudo apt-get -y install vim zsh git tmux cmake build-essential avahi-daemon
+    sudo systemctl start avahi-daemon
+    sudo systemctl enable avahi-daemon
+  elif type dnf >/dev/null 2>&1; then
+    echo "Detected Fedora system"
+    sudo dnf -y groupinstall "Development Tools"
+    sudo dnf -y install vim zsh git tmux cmake kernel-devel kernel-headers avahi
+    sudo systemctl start avahi-daemon
+    sudo systemctl enable avahi-daemon
+  elif type yum >/dev/null 2>&1; then
+    echo "Detected RHEL/CentOS system"
+    sudo yum -y groupinstall "Development Tools"
+    sudo yum -y install vim zsh git tmux cmake kernel-devel kernel-headers avahi
+    sudo systemctl start avahi-daemon
+    sudo systemctl enable avahi-daemon
+  elif type pacman >/dev/null 2>&1; then
+    echo "Detected Arch system"
+    sudo pacman -S --needed vim zsh git tmux cmake base-devel avahi
+  else
+    echo "Error: No supported package manager found"
+    echo "Please install the following packages manually:"
+    echo "  - vim, zsh, git, tmux, cmake, build-essential"
+    return 2>&- || exit
+  fi
+  echo "Package installation completed"
+else
+   echo "Required packages are already installed - Skipping installation"
+fi
+
+echo -e "\n=== Checking GitHub SSH Configuration ==="
+if [ ! -d ~/.ssh ]; then
+  echo "Creating ~/.ssh directory"
+  mkdir -p ~/.ssh
+  chmod 700 ~/.ssh
+else
+  echo "SSH directory already exists - Skipping creation"
+fi
+
+if ! grep -q "host github" ~/.ssh/config 2>/dev/null && ! ssh -o StrictHostKeyChecking=no -T git@github.com 2>/dev/null; then
+  echo "Setting up GitHub SSH access..."
+  if [ ! -f ~/.ssh/github ]; then
+    echo "Generating new SSH key"
+    ssh-keygen -t ed25519 -b 521 -C '' -N '' -f ~/.ssh/github
+  else
+    echo "SSH key already exists - Skipping generation"
+  fi
+
+  if ! grep -q "host github" ~/.ssh/config 2>/dev/null; then
+    echo "Adding SSH configuration"
+    cat << EOF > ~/.ssh/config
+host github github.com
+ Hostname github.com
+ IdentityFile ~/.ssh/github
+ User git
+EOF
+    chmod 600 ~/.ssh/config
+  else
+    echo "SSH config already exists - Skipping configuration"
+  fi
+
+  echo -e "\nGitHub public key:"
+  echo "----------------------------------------"
+  cat ~/.ssh/github.pub
+  echo "----------------------------------------"
+  echo -e "\n1. Visit: https://github.com/settings/ssh/new"
+  echo "2. Register the above public key to GitHub"
+  read -p "3. Press Enter when registration is complete"
+
+  echo "Testing GitHub connection..."
+  ssh -T git@github.com
+else
+  echo "GitHub SSH access is already configured - Skipping setup"
+  exit 0
+fi
+}
+
 # ref. https://qiita.com/b4b4r07/items/dcd6be0bb9c9185475bb
 for opt in "${@}"
 do
   case ${opt} in
     '-h'|'--help'|'--usage'|'help')
       usage
+      exit 0
+      ;;
+    '--init'|'init')
+      init
       exit 0
       ;;
     '-v'|'--version'|'version')

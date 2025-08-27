@@ -4,17 +4,15 @@ Installation
 -------------------
 
 ```bash
-$ bash ./01_init
-$ bash ./02_install
-```
-```bash
-$ bash ./01_init
-$ bash ./02_install --vim --zsh --tmux
+$ git clone https://github.com/0ctps/dotfiles
+$ bash ./dotfiles/install --init
+$ bash ./dotfiles/install --vim --zsh --tmux
 ```
 
 Supported types
 -------------------
 * vim
 * zsh
+* bash
 * tmux
 * fish
