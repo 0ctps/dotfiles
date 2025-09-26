@@ -33,7 +33,7 @@ EOF
 main() {
     local network=""
     local filter="all"
-    
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -57,46 +57,46 @@ main() {
         esac
         shift
     done
-    
+
     # If no network specified, use default gateway's network
     if [[ -z $network ]]; then
         network=$(get_default_network)
         echo "No network specified. Using default network: $network"
     fi
-    
+
     # Extract network address and subnet mask
     IFS='/' read -r ip_address subnet_mask <<< "$network"
-    
+
     # Validate inputs
     if ! is_valid_ip "$ip_address"; then
         echo "Error: Invalid IP address '$ip_address'"
         exit 1
     fi
-    
+
     if ! is_valid_subnet "$subnet_mask"; then
         echo "Error: Invalid subnet mask '$subnet_mask'"
         exit 1
     fi
-    
+
     # Calculate network range
     local ip_decimal=$(ip_to_decimal "$ip_address")
     local mask=$((0xffffffff << (32 - subnet_mask)))
     local network_start=$((ip_decimal & mask))
     local network_end=$((network_start | ~mask & 0xffffffff))
-    
+
     # Create temporary file for results
     results_file=$(mktemp)
-    
+
     echo "Scanning network $network..."
     scan_network "$network_start" "$network_end" "$subnet_mask" "$results_file"
-    
+
     # Sort results
     sort -V "$results_file" > "${results_file}.sorted"
     mv "${results_file}.sorted" "$results_file"
-    
+
     # Display results
     display_results "$filter" "$results_file"
-    
+
     # Cleanup
     rm "$results_file"
 }
