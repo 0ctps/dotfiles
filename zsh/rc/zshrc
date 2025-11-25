@@ -472,11 +472,7 @@ if [[ $TERM = xterm* ]];then
   PROMPT="${COLOR} %~ ${COLOR}${RESET}%(?.%F{${BLUE}}.%F{${RED}})〉${RESET}"
 
     function u_prompt() {
-      #if [[ ( $+commands[python] || $+commands[python3] ) && -e $ZDOTDIR/rc/plugin/prompt.py && ! -f ${HOME}/.zsh.lowspec ]]; then
-      #  local RETURN=$?
-      #  PROMPT="$(~/.zsh/rc/plugin/prompt.py ${RETURN})"
-      #else
-        local PROMPTBODY="${COLOR} "$(get_formatted_directory_path)" ${RESET}%(?.%F{${BLUE}}.%F{${RED}})⟩ ${RESET}"
+      local PROMPTBODY="${COLOR} "$(get_formatted_directory_path)" ${RESET}%(?.%F{${BLUE}}.%F{${RED}})⟩ ${RESET}"
       if [[ ( $+commands[git] ) ]]; then
         local PROMPTBODY="${COLOR} "$(get_formatted_directory_path)"$(git_prompt) ${RESET}%(?.%F{${BLUE}}.%F{${RED}})⟩ ${RESET}"
       fi
