@@ -459,16 +459,42 @@ if [[ $TERM = xterm* ]];then
       echo " | ${REPO_COLOR}${branch_name}${indicator:+$indicator}${RESET}"
     }
     ip_prompt() {
-      echo $(python3 -c "import socket;print([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1])")
+      emulate -L zsh
+      local ip_addr=""
+      # 1. Linux
+      if (( $+commands[ip] )); then
+          local route_info
+          route_info=$(ip route get 8.8.8.8 2>/dev/null)
+          if [[ -n "$route_info" ]]; then
+              local temp="${route_info##*src }"
+              ip_addr="${temp%% *}"
+          fi
+      # 2. macOS/BSD
+      elif (( $+commands[route] )); then
+          local route_out
+          route_out=$(route -n get 8.8.8.8 2>/dev/null)
+          if [[ "$route_out" =~ "interface: ([^[:space:]]+)" ]]; then
+              local iface="${match[1]}"
+              # macOS
+              if (( $+commands[ipconfig] )); then
+                  ip_addr=$(ipconfig getifaddr "$iface")
+              fi
+              # BSD
+              if [[ -z "$ip_addr" ]] && (( $+commands[ifconfig] )); then
+                  local ifconfig_out=$(ifconfig "$iface" 2>/dev/null)
+                  if [[ "$ifconfig_out" =~ "inet[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)" ]]; then
+                      ip_addr="${match[1]}"
+                  fi
+              fi
+          fi
+      fi
+      echo "$ip_addr"
     }
   fi
 
   local COLOR=${FOREGROUND_COLOR}${BACKGROUND_COLOR}
 
-  RPROMPT="${USER_COLOR} %n ${COLOR}|${COLOR}%F{${GREEN}} %m ${COLOR}|${COLOR} %w ${COLOR}|${COLOR} %*${RESET}"
-  if [[ ( $+commands[python3] ) ]]; then
-    RPROMPT="${USER_COLOR} %n ${COLOR}|${COLOR}%F{${GREEN}} %m ${COLOR}|${COLOR} $(ip_prompt) ${COLOR}|${COLOR} %w ${COLOR}|${COLOR} %*${RESET}"
-  fi
+  RPROMPT="${USER_COLOR} %n ${COLOR}|${COLOR}%F{${GREEN}} %m ${COLOR}|${COLOR} $(ip_prompt) ${COLOR}|${COLOR} %w ${COLOR}|${COLOR} %*${RESET}"
   PROMPT="${COLOR} %~ ${COLOR}${RESET}%(?.%F{${BLUE}}.%F{${RED}})〉${RESET}"
 
     function u_prompt() {

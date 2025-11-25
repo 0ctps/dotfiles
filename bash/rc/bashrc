@@ -474,6 +474,39 @@ case "$TERM" in
 
     COLOR=${FOREGROUND_COLOR}${BACKGROUND_COLOR}
 
+    function ip_prompt() {
+      local ip_addr=""
+      # 1. Linux
+      if command -v ip >/dev/null 2>&1; then
+          local route_info
+          route_info=$(ip route get 8.8.8.8 2>/dev/null)
+          if [[ -n "$route_info" ]]; then
+              local temp="${route_info##*src }"
+              ip_addr="${temp%% *}"
+          fi
+      # 2. macOS / BSD
+      elif command -v route >/dev/null 2>&1; then
+          local route_out
+          route_out=$(route -n get 8.8.8.8 2>/dev/null)
+          if [[ "$route_out" =~ interface:[[:space:]]*([^[:space:]]+) ]]; then
+              local iface="${BASH_REMATCH[1]}"
+              # macOS
+              if command -v ipconfig >/dev/null 2>&1; then
+                  ip_addr=$(ipconfig getifaddr "$iface")
+              fi
+              # BSD
+              if [[ -z "$ip_addr" ]] && command -v ifconfig >/dev/null 2>&1; then
+                  local ifconfig_out=$(ifconfig "$iface" 2>/dev/null)
+                  if [[ "$ifconfig_out" =~ inet[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+                      ip_addr="${BASH_REMATCH[1]}"
+                  fi
+              fi
+          fi
+      fi
+
+      echo "$ip_addr"
+    }
+
     # ref. https://orebibou.com/ja/home/201810/20181002_001/
     function update_prompt() {
       local exit_status=$?
@@ -488,14 +521,9 @@ case "$TERM" in
       local rp_date=$(date +"%a %d")
       local rp_time=$(date "+%H:%M:%S")
 
-      if [ -x "$(command -v python3)" ]; then
-        local rp_ip=$(python3 -c "import socket;print([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1])")
-        local num=$(($COLUMNS - ${#rp_id} - ${#rp_host} - ${#rp_ip} - ${#rp_date} - ${#rp_time} - 12))
-        printf "%${num}s${USER_COLOR}${rp_id} ${COLOR}|${COLOR}${GREEN} ${rp_host} ${COLOR}|${COLOR} ${rp_ip} ${COLOR}|${COLOR} ${rp_date} ${COLOR}|${COLOR} ${rp_time}${RESET}\\r" ''
-      else
-        local num=$(($COLUMNS - ${#rp_id} - ${#rp_host} - ${#rp_date} - ${#rp_time} - 10))
-        printf "%${num}s${USER_COLOR}${rp_id} ${COLOR}|${COLOR}${GREEN} ${rp_host} ${COLOR}|${COLOR} ${rp_date} ${COLOR}|${COLOR} ${rp_time}${RESET}\\r" ''
-      fi
+      local rp_ip=$(ip_prompt)
+      local num=$(($COLUMNS - ${#rp_id} - ${#rp_host} - ${#rp_ip} - ${#rp_date} - ${#rp_time} - 12))
+      printf "%${num}s${USER_COLOR}${rp_id} ${COLOR}|${COLOR}${GREEN} ${rp_host} ${COLOR}|${COLOR} ${rp_ip} ${COLOR}|${COLOR} ${rp_date} ${COLOR}|${COLOR} ${rp_time}${RESET}\\r" ''
     }
 
     PROMPT_COMMAND=update_prompt
