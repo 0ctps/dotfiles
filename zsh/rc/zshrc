@@ -17,7 +17,7 @@
 #                                        |___|
 
 #       * author    : 0
-#       * ver       : 3.54
+#       * ver       : 3.55
 
 
 
@@ -89,7 +89,7 @@ fpath=($ZDOTDIR/rc/completion $fpath)
 
 # ref. https://unix.stackexchange.com/questions/273861/unlimited-history-in-zsh
 HISTFILE=$HOME/.zsh_history
-HISTSIZE=10000000
+HISTSIZE=5000
 SAVEHIST=10000000
 
 setopt bang_hist                 # treat the '!' character specially during expansion.
@@ -112,7 +112,7 @@ zle -N history-beginning-search-backward-end history-search-end
 zle -N history-beginning-search-forward-end history-search-end
 bindkey "^P" history-beginning-search-backward-end
 bindkey "^N" history-beginning-search-forward-end
-function history-all { history -E 1 }
+function history-all { grep -a . "$HOME/.zsh_history" }
 
 # ]]
 # * «« -------------------------------------------------/
