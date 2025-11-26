@@ -1,1 +1,30 @@
-python3 -c "import socket;print([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1])"
+#!/usr/bin/env bash
+
+ip_addr=""
+# 1. Linux
+if command -v ip >/dev/null 2>&1; then
+    route_info=$(ip route get 8.8.8.8 2>/dev/null)
+    if [[ -n "$route_info" ]]; then
+        temp="${route_info##*src }"
+        ip_addr="${temp%% *}"
+    fi
+# 2. macOS / BSD
+elif command -v route >/dev/null 2>&1; then
+    route_out=$(route -n get 8.8.8.8 2>/dev/null)
+    if [[ "$route_out" =~ interface:[[:space:]]*([^[:space:]]+) ]]; then
+        iface="${BASH_REMATCH[1]}"
+        # macOS
+        if command -v ipconfig >/dev/null 2>&1; then
+            ip_addr=$(ipconfig getifaddr "$iface")
+        fi
+        # BSD
+        if [[ -z "$ip_addr" ]] && command -v ifconfig >/dev/null 2>&1; then
+            ifconfig_out=$(ifconfig "$iface" 2>/dev/null)
+            if [[ "$ifconfig_out" =~ inet[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+                ip_addr="${BASH_REMATCH[1]}"
+            fi
+        fi
+    fi
+fi
+
+echo "$ip_addr"
