@@ -7,7 +7,7 @@ trap exit ERR
 # Constants
 # ============================================================================
 declare -r SCRIPT_NAME=$(basename "${0}")
-declare -r VERSION="5.1.0"
+declare -r VERSION="5.1.1"
 declare -r WORK_DIR=$(dirname $(readlink -f "${SCRIPT_NAME}"))
 declare -r DOT_HOME="${HOME}/.dot"
 
@@ -451,9 +451,9 @@ setup_bash() {
 # Setup Fish configuration
 setup_fish() {
   echo "Setting up Fish..."
-  ensure_directory "${HOME}/.config"
+  ensure_directory "${HOME}/.config/fish"
 
-  create_symlink "${DOT_HOME}/fish" "${HOME}/.config/fish"
+  create_symlink "${DOT_HOME}/fish/config.fish" "${HOME}/.config/fish/config.fish"
 }
 
 # Setup SSH configuration
