@@ -9,7 +9,7 @@ trap exit ERR
 declare -r SCRIPT_NAME=$(basename "${0}")
 declare -r VERSION="5.3.0"
 declare -r WORK_DIR=$(dirname $(readlink -f "${SCRIPT_NAME}"))
-declare -r DOT_HOME="${HOME}/.dot"
+declare -r DOT_HOME="${HOME}/.dots"
 
 # Required packages
 declare -ra REQUIRED_PACKAGES=("vim" "zsh" "git" "tmux" "cmake")

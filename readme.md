@@ -4,8 +4,8 @@ Installation
 -------------------
 
 ```bash
-$ git clone [https://github.com/0ctps/dotfiles](https://github.com/0ctps/dotfiles) .dot
-$ cd .dot
+$ git clone [https://github.com/0ctps/dotfiles](https://github.com/0ctps/dotfiles)
+$ cd dotfiles
 
 # Initialize environment (Install packages & Setup SSH)
 $ ./dots init
