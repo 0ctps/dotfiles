@@ -355,6 +355,7 @@ zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
 # * »»  prompt -----------------------------------------/
 # [[
 
+ZLE_RPROMPT_INDENT=0
 PROMPT="[%~]%(!,#,$) "
 RPROMPT="[%n|%m|%w|%*]"
 SPROMPT="%r is correct [n,y,a,e]: "
