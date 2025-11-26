@@ -7,24 +7,22 @@ trap exit ERR
 # Constants
 # ============================================================================
 declare -r SCRIPT_NAME=$(basename "${0}")
-declare -r VERSION="5.1.1"
+declare -r VERSION="5.3.0"
 declare -r WORK_DIR=$(dirname $(readlink -f "${SCRIPT_NAME}"))
 declare -r DOT_HOME="${HOME}/.dot"
 
 # Required packages
 declare -ra REQUIRED_PACKAGES=("vim" "zsh" "git" "tmux" "cmake")
 
-# Installation flags
-declare -a INSTALL_FLAGS=()
+# Installation flags and Mode
+declare -a TARGETS=()
+declare COMMAND_MODE="help" # Default mode
 
 # ============================================================================
 # Color Configuration
 # ============================================================================
 
-# Detect terminal theme (dark or light)
 detect_terminal_theme() {
-  # Method 1: Check COLORFGBG environment variable
-  # Format: "foreground;background" where 0-7 is dark, 8-15 is light
   if [ -n "${COLORFGBG:-}" ]; then
     local bg_color="${COLORFGBG##*;}"
     if [ "${bg_color}" -ge 0 ] 2>/dev/null && [ "${bg_color}" -le 6 ]; then
@@ -36,48 +34,37 @@ detect_terminal_theme() {
     fi
   fi
 
-  # Method 2: Check common environment variables
   case "${TERM_PROGRAM:-}" in
     "iTerm.app"|"Apple_Terminal")
-      # macOS terminals - assume dark by default (most common)
       echo "dark"
       return
       ;;
   esac
 
-  # Method 3: Check if running in known dark terminal emulators
   if [ -n "${WT_SESSION:-}" ]; then
-    # Windows Terminal - check profile setting would be complex
     echo "dark"
     return
   fi
 
-  # Default to dark theme (most common in development environments)
   echo "dark"
 }
 
-# Initialize color scheme based on detected theme
-# Can be overridden with THEME_MODE environment variable (dark/light)
 declare THEME_MODE="${THEME_MODE:-$(detect_terminal_theme)}"
 
 # ============================================================================
 # Logging Functions
 # ============================================================================
 
-# ANSI control codes
 declare -r RESET="\033[0m"
 declare -r BOLD="\033[1m"
 
-# Color definitions for dark theme (optimized for dark backgrounds)
 if [ "${THEME_MODE}" = "light" ]; then
-  # Light theme colors (darker colors for light backgrounds)
   declare -r FG_RED="\033[31m"
   declare -r FG_GREEN="\033[32m"
   declare -r FG_YELLOW="\033[33m"
   declare -r FG_CYAN="\033[36m"
   declare -r FG_GRAY="\033[90m"
 else
-  # Dark theme colors (brighter colors for dark backgrounds)
   declare -r FG_RED="\033[91m"
   declare -r FG_GREEN="\033[92m"
   declare -r FG_YELLOW="\033[93m"
@@ -85,7 +72,6 @@ else
   declare -r FG_GRAY="\033[37m"
 fi
 
-# Simple logging functions
 log_error() {
   echo -e "${FG_RED}ERROR:${RESET} $*" >&2
 }
@@ -106,7 +92,6 @@ log_skip() {
   echo -e "${FG_GRAY}SKIP:${RESET} $*"
 }
 
-# Prompt for user input
 prompt_continue() {
   echo -e "${FG_YELLOW}Press [Enter] to ${*}...${RESET}"
   read -r KEY
@@ -116,14 +101,10 @@ prompt_continue() {
 # System Check Functions
 # ============================================================================
 
-# Check if command exists
-# Args: $1=command_name
-# Returns: 0 if exists, 1 otherwise
 command_exists() {
   type "${1}" >/dev/null 2>&1
 }
 
-# Check OS compatibility
 check_os_compatibility() {
   if [[ ! "${OSTYPE}" =~ 'linux' ]] && [[ ! "${OSTYPE}" =~ 'darwin' ]]; then
     log_error "This script is designed to run on Linux. Your current operating system appears to be ${OSTYPE}."
@@ -142,8 +123,6 @@ check_os_compatibility() {
 # Package Manager Functions
 # ============================================================================
 
-# Detect package manager
-# Returns: package manager name (apt-get, dnf, yum, pacman, or empty)
 detect_package_manager() {
   if command_exists apt-get; then
     echo "apt-get"
@@ -158,47 +137,29 @@ detect_package_manager() {
   fi
 }
 
-# Setup and enable avahi-daemon
-#setup_avahi_daemon() {
-#  sudo systemctl start avahi-daemon
-#  sudo systemctl enable avahi-daemon
-#}
-
-# Install packages using apt-get
 install_packages_apt() {
   log_info "Detected Debian/Ubuntu"
   sudo apt-get update
   sudo apt-get -y install vim zsh git tmux cmake build-essential
-#  sudo apt-get -y install vim zsh git tmux cmake build-essential avahi-daemon
-#  setup_avahi_daemon
 }
 
-# Install packages using dnf
 install_packages_dnf() {
   log_info "Detected Fedora"
   sudo dnf -y groupinstall "Development Tools"
   sudo dnf -y install vim zsh git tmux cmake kernel-devel kernel-headers
-#  sudo dnf -y install vim zsh git tmux cmake kernel-devel kernel-headers avahi
-#  setup_avahi_daemon
 }
 
-# Install packages using yum
 install_packages_yum() {
   log_info "Detected RHEL/CentOS"
   sudo yum -y groupinstall "Development Tools"
   sudo yum -y install vim zsh git tmux cmake kernel-devel kernel-headers
-#  sudo yum -y install vim zsh git tmux cmake kernel-devel kernel-headers avahi
-#  setup_avahi_daemon
 }
 
-# Install packages using pacman
 install_packages_pacman() {
   log_info "Detected Arch Linux"
   sudo pacman -S --needed vim zsh git tmux cmake base-devel
-#  sudo pacman -S --needed vim zsh git tmux cmake base-devel avahi
 }
 
-# Install required packages
 install_required_packages() {
   local all_installed=true
   for pkg in "${REQUIRED_PACKAGES[@]}"; do
@@ -217,18 +178,10 @@ install_required_packages() {
   local pkg_manager=$(detect_package_manager)
 
   case "${pkg_manager}" in
-    apt-get)
-      install_packages_apt
-      ;;
-    dnf)
-      install_packages_dnf
-      ;;
-    yum)
-      install_packages_yum
-      ;;
-    pacman)
-      install_packages_pacman
-      ;;
+    apt-get) install_packages_apt ;;
+    dnf)     install_packages_dnf ;;
+    yum)     install_packages_yum ;;
+    pacman)  install_packages_pacman ;;
     *)
       log_error "No supported package manager found"
       echo ""
@@ -245,7 +198,6 @@ install_required_packages() {
 # SSH Configuration Functions
 # ============================================================================
 
-# Create SSH directory if not exists
 setup_ssh_directory() {
   if [ ! -d ~/.ssh ]; then
     log_info "Creating ~/.ssh directory"
@@ -256,7 +208,6 @@ setup_ssh_directory() {
   fi
 }
 
-# Generate SSH key for GitHub
 generate_github_ssh_key() {
   if [ ! -f ~/.ssh/github ]; then
     log_info "Generating SSH key"
@@ -266,9 +217,8 @@ generate_github_ssh_key() {
   fi
 }
 
-# Configure SSH for GitHub
 configure_github_ssh() {
-  if ! grep -q "host github" ~/.ssh/config 2>/dev/null; then
+  if ! grep -qE "^[[:space:]]*[Hh]ost[[:space:]]+github([[:space:]]|$)" ~/.ssh/config 2>/dev/null; then
     log_info "Adding SSH configuration"
     cat << EOF > ~/.ssh/config
 host github github.com
@@ -282,14 +232,17 @@ EOF
   fi
 }
 
-# Test GitHub SSH connection
-# Returns: 0 if configured, 1 otherwise
 is_github_ssh_configured() {
-  grep -q "host github" ~/.ssh/config 2>/dev/null || \
-    ssh -o StrictHostKeyChecking=no -T git@github.com 2>/dev/null
+  local config_file="${HOME}/.ssh/config"
+  local key_file="${HOME}/.ssh/github"
+
+  if [[ ! -f "${config_file}" ]]; then return 1; fi
+  if ! grep -qE "^[[:space:]]*[Hh]ost[[:space:]]+github([[:space:]]|$)" "${config_file}"; then return 1; fi
+  if [[ ! -f "${key_file}" ]]; then return 1; fi
+
+  return 0
 }
 
-# Display GitHub public key and wait for user to register it
 display_github_key_registration_prompt() {
   echo ""
   echo "GitHub SSH public key:"
@@ -304,33 +257,28 @@ display_github_key_registration_prompt() {
   read -p "Press [Enter] when complete..." KEY
 }
 
-# Test GitHub connection
-# Returns: 0 if successful, 1 if failed
 test_github_connection() {
   log_info "Testing GitHub connection"
+  local ssh_output
+  ssh_output=$(ssh -o StrictHostKeyChecking=no -T git@github.com 2>&1 || true)
 
-  if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+  if echo "${ssh_output}" | grep -q "successfully authenticated"; then
     log_success "GitHub SSH verified"
     return 0
   else
     log_warn "GitHub SSH connection failed"
     echo ""
-    echo "Possible issues:"
-    echo "  - Public key not yet registered on GitHub"
-    echo "  - Network connection problem"
-    echo "  - SSH key permissions incorrect"
+    echo "Command output:"
+    echo "${ssh_output}"
     echo ""
     return 1
   fi
 }
 
-# Setup GitHub SSH access with retry
-# Args: $1=retry_count (optional, default=0)
 setup_github_ssh() {
   local retry_count="${1:-0}"
   local max_retries=3
 
-  # First call only - display section header
   if [ "${retry_count}" -eq 0 ]; then
     setup_ssh_directory
   fi
@@ -342,27 +290,18 @@ setup_github_ssh() {
 
   log_info "Setting up GitHub SSH"
 
-  # Only generate key and configure on first attempt
   if [ "${retry_count}" -eq 0 ]; then
     generate_github_ssh_key
     configure_github_ssh
     display_github_key_registration_prompt
   fi
 
-  # Test connection
   if test_github_connection; then
     return 0
   fi
 
-  # Connection failed - offer retry
   if [ "${retry_count}" -ge "${max_retries}" ]; then
     log_error "Maximum retry attempts (${max_retries}) reached"
-    echo ""
-    echo "Please verify:"
-    echo "  1. Public key is registered on GitHub"
-    echo "  2. Network connection is working"
-    echo "  3. You can manually test: ssh -T git@github.com"
-    echo ""
     return 1
   fi
 
@@ -379,30 +318,22 @@ setup_github_ssh() {
       ;;
     *)
       log_warn "Setup aborted"
-      echo ""
-      echo "You can complete the setup later by running:"
-      echo "  ${SCRIPT_NAME} init"
-      echo ""
       return 1
       ;;
   esac
 }
 
 # ============================================================================
-# Helper Functions for Dotfile Setup
+# Helper Functions for File Operations
 # ============================================================================
 
-# Create symbolic link with existence check
-# Args: $1=source_path, $2=target_path
 create_symlink() {
   local source="${1}"
   local target="${2}"
 
-  # Check if target exists and is a symlink pointing to the correct source
   if [ -L "${target}" ]; then
     local current_source=$(readlink -f "${target}")
     local expected_source=$(readlink -f "${source}")
-
     if [ "${current_source}" = "${expected_source}" ]; then
       log_skip "${target} exists"
       return 0
@@ -420,11 +351,19 @@ create_symlink() {
   log_success "${target} -> ${source}"
 }
 
-# Create directory with existence check
-# Args: $1=directory_path
+remove_symlink() {
+  local target="${1}"
+
+  if [ -e "${target}" ] || [ -L "${target}" ]; then
+    rm -rf "${target}"
+    log_success "Removed ${target}"
+  else
+    log_skip "${target} not found"
+  fi
+}
+
 ensure_directory() {
   local dirpath="${1}"
-
   if [ ! -d "${dirpath}" ]; then
     mkdir -p "${dirpath}"
     log_success "created ${dirpath}"
@@ -434,55 +373,42 @@ ensure_directory() {
 }
 
 # ============================================================================
-# Dotfile Setup Functions
+# Dotfile Setup Functions (Install)
 # ============================================================================
 
-# Setup Bash configuration
 setup_bash() {
   echo "Setting up Bash..."
   ensure_directory "${HOME}/.cache/bash"
-
   create_symlink "${DOT_HOME}/bash/bash_profile" "${HOME}/.bash_profile"
   create_symlink "${DOT_HOME}/bash/bashrc"       "${HOME}/.bashrc"
-  create_symlink "${DOT_HOME}/bash/."            "${HOME}/.bash"
-  create_symlink "${DOT_HOME}/bash/../scripts"   "${HOME}/.scripts.d"
+  create_symlink "${DOT_HOME}/bash"             "${HOME}/.bash"
+  create_symlink "${DOT_HOME}/scripts"           "${HOME}/.scripts.d"
 }
 
-# Setup Fish configuration
 setup_fish() {
   echo "Setting up Fish..."
   ensure_directory "${HOME}/.config/fish"
-
-  create_symlink "${DOT_HOME}/fish/config.fish" "${HOME}/.config/fish/config.fish"
+  create_symlink "${DOT_HOME}/fish/config.fish"  "${HOME}/.config/fish/config.fish"
 }
 
-# Setup SSH configuration
 setup_ssh() {
   echo "Setting up SSH..."
   ensure_directory "${HOME}/.ssh/pub"
 }
 
-# Setup tmux configuration
 setup_tmux() {
   echo "Setting up Tmux..."
-
-  # Install tmux plugin if needed
   local plugin_dir="${DOT_HOME}/tmux/vendor"
   local plugin_path="${plugin_dir}/tmux-mem-cpu-load"
 
   if [ ! -d "${plugin_path}" ]; then
     log_info "Installing tmux plugin"
-
     if ! command_exists cmake; then
       log_error "'cmake' is NOT installed"
-      echo "To install: sudo apt install cmake build-essential"
-      prompt_continue "skip"
     else
       local plugin_repo="https://github.com/thewtex/tmux-mem-cpu-load"
-
       mkdir -p "${plugin_dir}"
       cd "${plugin_dir}"
-
       if git clone "${plugin_repo}" 2>/dev/null; then
         cd tmux-mem-cpu-load
         if cmake . && make && sudo make install; then
@@ -490,9 +416,6 @@ setup_tmux() {
         else
           log_error "Tmux plugin build failed"
         fi
-        cd "${DOT_HOME}"
-      else
-        log_error "Failed to clone tmux plugin repository"
         cd "${DOT_HOME}"
       fi
     fi
@@ -503,88 +426,84 @@ setup_tmux() {
   create_symlink "${DOT_HOME}/tmux/tmux.conf" "${HOME}/.tmux.conf"
 }
 
-# Setup Vim configuration
 setup_vim() {
   echo "Setting up Vim..."
   ensure_directory "${HOME}/.vim"
-
   create_symlink "${DOT_HOME}/vim/vimrc" "${HOME}/.vimrc"
   create_symlink "${DOT_HOME}/vim/rc"    "${HOME}/.vim/rc"
 }
 
-# Setup Zsh configuration
 setup_zsh() {
   echo "Setting up Zsh..."
   ensure_directory "${HOME}/.cache/zsh"
+  create_symlink "${DOT_HOME}/zsh/zshenv" "${HOME}/.zshenv"
+  create_symlink "${DOT_HOME}/zsh"       "${HOME}/.zsh"
+  create_symlink "${DOT_HOME}/scripts"    "${HOME}/.scripts.d"
 
-  create_symlink "${DOT_HOME}/zsh/zshenv"      "${HOME}/.zshenv"
-  create_symlink "${DOT_HOME}/zsh/."           "${HOME}/.zsh"
-  create_symlink "${DOT_HOME}/zsh/../scripts"  "${HOME}/.scripts.d"
-
-  # Install syntax highlighting
   local syntax_dir="${HOME}/.syntax"
   local syntax_repo="https://github.com/zsh-users/zsh-syntax-highlighting"
 
   if [ -d "${syntax_dir}/.git" ]; then
     log_info "Updating zsh-syntax-highlighting"
     cd "${syntax_dir}"
-    if git pull >/dev/null 2>&1; then
-      log_success "Zsh syntax highlighting updated"
-    else
-      log_warn "Failed to update zsh-syntax-highlighting"
-    fi
+    git pull >/dev/null 2>&1 || log_warn "Failed to update syntax highlighting"
     cd "${HOME}"
   else
-    if [ -d "${syntax_dir}" ]; then
-      log_warn "Removing non-git syntax directory"
-      rm -rf "${syntax_dir}"
-    fi
-
+    if [ -d "${syntax_dir}" ]; then rm -rf "${syntax_dir}"; fi
     log_info "Cloning zsh-syntax-highlighting"
-    if git clone "${syntax_repo}" "${syntax_dir}" >/dev/null 2>&1; then
-      log_success "Zsh syntax highlighting installed"
-    else
-      log_warn "Failed to clone zsh-syntax-highlighting"
-    fi
+    git clone "${syntax_repo}" "${syntax_dir}" >/dev/null 2>&1 || log_warn "Failed to clone syntax highlighting"
   fi
 }
 
-# Dispatch to appropriate setup function
-# Args: $1=dotfile_type
-setup_dotfile() {
-  local type="${1}"
+# ============================================================================
+# Dotfile Removal Functions (Uninstall)
+# ============================================================================
 
-  case "${type}" in
-    bash)
-      setup_bash
-      ;;
-    fish)
-      setup_fish
-      ;;
-    ssh)
-      setup_ssh
-      ;;
-    tmux)
-      setup_tmux
-      ;;
-    vim)
-      setup_vim
-      ;;
-    zsh)
-      setup_zsh
-      ;;
-    *)
-      log_warn "Unknown dotfile type: ${type}"
-      return 1
-      ;;
-  esac
+remove_bash() {
+  echo "Removing Bash configuration..."
+  remove_symlink "${HOME}/.bash_profile"
+  remove_symlink "${HOME}/.bashrc"
+  remove_symlink "${HOME}/.bash"
+  remove_symlink "${HOME}/.scripts.d"
+}
+
+remove_fish() {
+  echo "Removing Fish configuration..."
+  remove_symlink "${HOME}/.config/fish/config.fish"
+}
+
+remove_ssh() {
+  echo "Removing SSH configuration links..."
+  log_skip "Skipping SSH directory removal to prevent data loss"
+}
+
+remove_tmux() {
+  echo "Removing Tmux configuration..."
+  remove_symlink "${HOME}/.tmux.conf"
+}
+
+remove_vim() {
+  echo "Removing Vim configuration..."
+  remove_symlink "${HOME}/.vimrc"
+  remove_symlink "${HOME}/.vim/rc"
+}
+
+remove_zsh() {
+  echo "Removing Zsh configuration..."
+  remove_symlink "${HOME}/.zshenv"
+  remove_symlink "${HOME}/.zsh"
+  remove_symlink "${HOME}/.scripts.d"
+
+  if [ -d "${HOME}/.syntax" ]; then
+    rm -rf "${HOME}/.syntax"
+    log_success "Removed ${HOME}/.syntax"
+  fi
 }
 
 # ============================================================================
-# Initialization and Setup Functions
+# Core Logic
 # ============================================================================
 
-# Initialize dotfiles repository
 initialize_dotfiles_repo() {
   if [ ! -e "${DOT_HOME}" ]; then
     log_info "Copying dotfiles to ${DOT_HOME}"
@@ -595,161 +514,194 @@ initialize_dotfiles_repo() {
   fi
 }
 
-# Setup gitconfig
 setup_gitconfig() {
   local source="${DOT_HOME}/.gitconfig"
   local target="${HOME}/.gitconfig"
-
   if [ ! -e "${source}" ]; then
     log_error "'.gitconfig' not found in ${DOT_HOME}"
-    prompt_continue "exit"
-    return 2>&- || exit
+    return 1
   fi
-
   if [ ! -e "${target}" ]; then
-    if cp "${source}" "${target}" > /dev/null 2>&1; then
-      log_success "Copied .gitconfig"
-    else
-      log_error "Failed to copy .gitconfig"
-      prompt_continue "exit"
-      return 2>&- || exit
-    fi
+    cp "${source}" "${target}"
+    log_success "Copied .gitconfig"
   else
     log_skip ".gitconfig exists"
   fi
 }
 
-# Main initialization process
-init() {
+process_dotfile() {
+  local type="${1}"
+  local action="${2}"
+
+  if [ "${action}" == "install" ]; then
+    case "${type}" in
+      bash) setup_bash ;;
+      fish) setup_fish ;;
+      ssh)  setup_ssh ;;
+      tmux) setup_tmux ;;
+      vim)  setup_vim ;;
+      zsh)  setup_zsh ;;
+      *)    log_warn "Unknown dotfile type: ${type}" ;;
+    esac
+  elif [ "${action}" == "remove" ]; then
+    case "${type}" in
+      bash) remove_bash ;;
+      fish) remove_fish ;;
+      ssh)  remove_ssh ;;
+      tmux) remove_tmux ;;
+      vim)  remove_vim ;;
+      zsh)  remove_zsh ;;
+      *)    log_warn "Unknown dotfile type: ${type}" ;;
+    esac
+  fi
+}
+
+# ============================================================================
+# Main Routines
+# ============================================================================
+
+run_init() {
   install_required_packages
   setup_github_ssh
 }
 
-# Main installation process
-main_install() {
+run_install() {
   initialize_dotfiles_repo
   setup_gitconfig
 
-  for flag in "${INSTALL_FLAGS[@]}"; do
-    if [ -n "${flag}" ]; then
-      setup_dotfile "${flag}"
+  for target in "${TARGETS[@]}"; do
+    if [ -n "${target}" ]; then
+      process_dotfile "${target}" "install"
     fi
   done
 
   log_success "Installation completed"
 }
 
-# ============================================================================
-# Command Line Argument Processing
-# ============================================================================
+run_remove() {
+  for target in "${TARGETS[@]}"; do
+    if [ -n "${target}" ]; then
+      process_dotfile "${target}" "remove"
+    fi
+  done
 
-# Display usage information
-usage() {
-  echo "  ./${SCRIPT_NAME} [options]"
-  echo ""
-  echo "OPTIONS:"
-  echo "  init    | --init              : Initialize environment (install packages and setup GitHub SSH)"
-  echo "  help    | --help    | -h      : Display this help message"
-  echo "  version | --version | -v      : Show version of this program"
-  echo "  all     | --all     | -a      : Install all dotfiles (bash, ssh, tmux, vim, zsh)"
-  echo "  bash    | --bash              : Install bash's dotfiles"
-  echo "  fish    | --fish              : Install fish's dotfiles"
-  echo "  ssh     | --ssh               : Install ssh configuration files"
-  echo "  tmux    | --tmux              : Install tmux's dotfiles"
-  echo "  vim     | --vim               : Install vim's dotfiles"
-  echo "  zsh     | --zsh               : Install zsh's dotfiles"
-  echo ""
-  echo "EXAMPLES:"
-  echo "  # Initialize environment (first time setup)"
-  echo "  ./${SCRIPT_NAME} init"
-  echo ""
-  echo "  # Install specific dotfiles"
-  echo "  ./${SCRIPT_NAME} --vim --zsh --tmux"
-  echo ""
-  echo "  # Install all dotfiles"
-  echo "  ./${SCRIPT_NAME} --all"
-  echo ""
+  log_success "Removal completed"
 }
 
-# Parse command line arguments
+# ============================================================================
+# Argument Parsing
+# ============================================================================
+
+usage() {
+  echo "Usage: ./${SCRIPT_NAME} [COMMAND] [OPTIONS] [TARGETS...]"
+  echo ""
+  echo "COMMANDS:"
+  echo "  init    | --init          : Initialize environment (packages & SSH)"
+  echo "  install | -i | --install  : Install dotfiles (create symlinks) [Default]"
+  echo "  remove  | -r | --remove   : Remove dotfiles (delete symlinks)"
+  echo "  help    | -h | --help     : Show this help"
+  echo "  version | -v | --version  : Show version"
+  echo ""
+  echo "TARGETS:"
+  echo "  all     | -a | --all"
+  echo "  bash    | --bash"
+  echo "  fish    | --fish"
+  echo "  ssh     | --ssh"
+  echo "  tmux    | --tmux"
+  echo "  vim     | --vim"
+  echo "  zsh     | --zsh"
+  echo ""
+  echo "EXAMPLES:"
+  echo "  ./${SCRIPT_NAME} init"
+  echo "  ./${SCRIPT_NAME} install zsh vim"
+  echo "  ./${SCRIPT_NAME} -i --all"
+  echo "  ./${SCRIPT_NAME} remove all"
+  echo "  ./${SCRIPT_NAME} -r tmux"
+}
+
 parse_arguments() {
+  if [ $# -eq 0 ]; then
+    TARGETS=("ssh" "vim" "zsh")
+    return
+  fi
+
+  # 1. Determine Command Mode from the first argument
+  local first_arg="${1}"
+
+  case "${first_arg}" in
+    'init'|'--init')
+      COMMAND_MODE="init"
+      shift
+      ;;
+    'install'|'-i'|'--install')
+      COMMAND_MODE="install"
+      shift
+      ;;
+    'remove'|'-r'|'--remove')
+      COMMAND_MODE="remove"
+      shift
+      ;;
+    'help'|'-h'|'--help')
+      usage
+      exit 0
+      ;;
+    'version'|'-v'|'--version')
+      echo "${SCRIPT_NAME} version ${VERSION}"
+      exit 0
+      ;;
+    *)
+      usage
+      exit 0
+      ;;
+  esac
+
+  # 2. Parse Targets and Options
   for opt in "${@}"; do
     case "${opt}" in
-      '-h'|'--help'|'--usage'|'help')
-        usage
-        exit 0
-        ;;
-      '--init'|'init')
-        init
-        exit 0
-        ;;
-      '-v'|'--version'|'version')
-        echo "${SCRIPT_NAME} version ${VERSION}"
-        exit 0
-        ;;
       '-a'|'--all'|'all')
-        INSTALL_FLAGS+=("bash" "ssh" "tmux" "vim" "zsh")
-        shift 1
+        TARGETS+=("bash" "ssh" "tmux" "vim" "zsh")
         ;;
-      '--bash'|'bash')
-        INSTALL_FLAGS+=("bash")
-        shift 1
-        ;;
-      '--fish'|'fish')
-        INSTALL_FLAGS+=("fish")
-        shift 1
-        ;;
-      '--ssh'|'ssh')
-        INSTALL_FLAGS+=("ssh")
-        shift 1
-        ;;
-      '--tmux'|'tmux')
-        INSTALL_FLAGS+=("tmux")
-        shift 1
-        ;;
-      '--vim'|'vim')
-        INSTALL_FLAGS+=("vim")
-        shift 1
-        ;;
-      '--zsh'|'zsh')
-        INSTALL_FLAGS+=("zsh")
-        shift 1
-        ;;
-      '--'|'-')
-        shift 1
-        INSTALL_FLAGS+=("${@}")
-        break
-        ;;
-      -*)
-        log_error "Illegal option: '$(echo ${1} | sed 's/^-*//')'"
-        echo ""
-        usage
-        exit 1
-        ;;
+      '--bash'|'bash') TARGETS+=("bash") ;;
+      '--fish'|'fish') TARGETS+=("fish") ;;
+      '--ssh'|'ssh')   TARGETS+=("ssh") ;;
+      '--tmux'|'tmux') TARGETS+=("tmux") ;;
+      '--vim'|'vim')   TARGETS+=("vim") ;;
+      '--zsh'|'zsh')   TARGETS+=("zsh") ;;
       *)
-        log_error "Illegal option: '${1}'"
+        # Strict validation: If any argument is unknown, show help and exit
+        log_error "Invalid option or target: '${opt}'"
         echo ""
         usage
         exit 1
         ;;
     esac
   done
-}
 
-# Set default installation flags if none specified
-set_default_flags() {
-  if [ ${#INSTALL_FLAGS[@]} -eq 0 ]; then
-    log_warn "No installation target specified"
-    log_info "Using recommended configuration: ssh, vim, zsh"
-    INSTALL_FLAGS+=("ssh" "vim" "zsh")
+  # Default targets if none specified (only for install/remove modes)
+  if [ ${#TARGETS[@]} -eq 0 ] && [ "${COMMAND_MODE}" != "init" ]; then
+     log_warn "No targets specified. Using defaults: ssh, vim, zsh"
+     TARGETS=("ssh" "vim" "zsh")
   fi
 }
 
 # ============================================================================
-# Main Entry Point
+# Entry Point
 # ============================================================================
 
 check_os_compatibility
 parse_arguments "${@}"
-set_default_flags
-main_install
+
+case "${COMMAND_MODE}" in
+  init)
+    run_init
+    ;;
+  install)
+    run_install
+    ;;
+  remove)
+    run_remove
+    ;;
+  *)
+    usage
+    ;;
+esac
