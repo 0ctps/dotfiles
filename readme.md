@@ -12,9 +12,12 @@ $ ./dots init
 
 # Install dotfiles (Create symlinks)
 $ ./dots install --vim --zsh --tmux
+$ ./dots install zsh vim
+$ ./dots -i --all
 
-# Alternatively (Default is install)
-$ ./dots --vim --zsh --tmux
+# Uninstall dotfiles (Remove symlinks)
+$ ./dots remove all
+$ ./dots -r tmux
 ```
 
 ## Usage
