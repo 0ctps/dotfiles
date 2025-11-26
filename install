@@ -7,7 +7,7 @@ trap exit ERR
 # Constants
 # ============================================================================
 declare -r SCRIPT_NAME=$(basename "${0}")
-declare -r VERSION="4.3.1"
+declare -r VERSION="5.1.0"
 declare -r WORK_DIR=$(dirname $(readlink -f "${SCRIPT_NAME}"))
 declare -r DOT_HOME="${HOME}/.dot"
 
@@ -448,6 +448,14 @@ setup_bash() {
   create_symlink "${DOT_HOME}/bash/../scripts"   "${HOME}/.scripts.d"
 }
 
+# Setup Fish configuration
+setup_fish() {
+  echo "Setting up Fish..."
+  ensure_directory "${HOME}/.config"
+
+  create_symlink "${DOT_HOME}/fish" "${HOME}/.config/fish"
+}
+
 # Setup SSH configuration
 setup_ssh() {
   echo "Setting up SSH..."
@@ -550,6 +558,9 @@ setup_dotfile() {
     bash)
       setup_bash
       ;;
+    fish)
+      setup_fish
+      ;;
     ssh)
       setup_ssh
       ;;
@@ -642,6 +653,7 @@ usage() {
   echo "  version | --version | -v      : Show version of this program"
   echo "  all     | --all     | -a      : Install all dotfiles (bash, ssh, tmux, vim, zsh)"
   echo "  bash    | --bash              : Install bash's dotfiles"
+  echo "  fish    | --fish              : Install fish's dotfiles"
   echo "  ssh     | --ssh               : Install ssh configuration files"
   echo "  tmux    | --tmux              : Install tmux's dotfiles"
   echo "  vim     | --vim               : Install vim's dotfiles"
@@ -681,6 +693,10 @@ parse_arguments() {
         ;;
       '--bash'|'bash')
         INSTALL_FLAGS+=("bash")
+        shift 1
+        ;;
+      '--fish'|'fish')
+        INSTALL_FLAGS+=("fish")
         shift 1
         ;;
       '--ssh'|'ssh')
