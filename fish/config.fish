@@ -212,19 +212,19 @@ function _get_ip_address
     if type -q ip
         set -l route_info (ip route get 8.8.8.8 2>/dev/null)
         if test -n "$route_info"
-            set ip_addr (echo $route_info | string match -r 'src\s+([^\s]+)' | awk '{print $2}')
+            set ip_addr (echo $route_info | string match -rg 'src\s+([^\s]+)')
         end
     else if type -q route
-        set -l iface (route -n get 8.8.8.8 2>/dev/null | string match -r 'interface:\s+([^\s]+)' | awk '{print $2}')
+        set -l iface (route -n get 8.8.8.8 2>/dev/null | string match -rg 'interface:\s+([^\s]+)')
         if test -n "$iface"
             if type -q ipconfig
                 set ip_addr (ipconfig getifaddr "$iface")
             else if type -q ifconfig
-                set ip_addr (ifconfig "$iface" 2>/dev/null | string match -r 'inet\s+([0-9.]+)' | awk '{print $2}')
+                set ip_addr (ifconfig "$iface" 2>/dev/null | string match -rg 'inet\s+([0-9.]+)')
             end
         end
     end
-    echo $ip_addr
+    echo $ip_addr | string trim
 end
 
 # -----------------------------------------------------------------------------
