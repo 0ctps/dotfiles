@@ -287,7 +287,7 @@ function fish_right_prompt
 
     # Date
     set_color $C_FG_TIME
-    echo -n (date +'%Y-%m-%d')
+    echo -n (date +'%a %d')
 
     set_color $sep_color
     echo -n "$SYM_SEPARATOR"
