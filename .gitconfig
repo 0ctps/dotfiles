@@ -6,11 +6,11 @@
   email = 
 
 [url "github.com:"]
-    InsteadOf = https://github.com/
-    InsteadOf = git@github.com:
+  InsteadOf = https://github.com/
+  InsteadOf = git@github.com:
 
 [init]
-    defaultBranch = main
+  defaultBranch = main
 
 [color]
   status = auto
