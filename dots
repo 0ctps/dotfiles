@@ -284,8 +284,10 @@ setup_github_ssh() {
   fi
 
   if is_github_ssh_configured; then
-    log_skip "GitHub SSH already configured"
-    return 0
+    if [ "${retry_count}" -eq 0 ]; then
+      log_skip "GitHub SSH already configured"
+      return 0
+    fi
   fi
 
   log_info "Setting up GitHub SSH"
