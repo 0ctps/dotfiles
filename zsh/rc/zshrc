@@ -229,6 +229,11 @@ if (( $+commands[tmux] )); then
   alias tat='tmux a -t $1'
 fi
 
+if (( $+commands[claude] )); then
+  alias claude='claude --dangerously-skip-permissions'
+  alias c='claude --dangerously-skip-permissions'
+  alias cr='claude --dangerously-skip-permissions --resume'
+fi
 
 # * »»» color --------------------------/
 
