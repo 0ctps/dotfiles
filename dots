@@ -519,16 +519,39 @@ initialize_dotfiles_repo() {
 setup_gitconfig() {
   local source="${DOT_HOME}/.gitconfig"
   local target="${HOME}/.gitconfig"
+  local local_config="${HOME}/.gitconfig.local"
+
   if [ ! -e "${source}" ]; then
     log_error "'.gitconfig' not found in ${DOT_HOME}"
     return 1
   fi
-  if [ ! -e "${target}" ]; then
-    cp "${source}" "${target}"
-    log_success "Copied .gitconfig"
-  else
-    log_skip ".gitconfig exists"
+
+  # Migrate: if target is a regular file (not symlink), extract user
+  # settings to .gitconfig.local before replacing with symlink
+  if [ -f "${target}" ] && [ ! -L "${target}" ]; then
+    log_info "Migrating .gitconfig from copy to symlink..."
+    local name email
+    name=$(git config --file "${target}" user.name 2>/dev/null || true)
+    email=$(git config --file "${target}" user.email 2>/dev/null || true)
+
+    if [ -n "${name}" ] || [ -n "${email}" ]; then
+      [ ! -e "${local_config}" ] && touch "${local_config}"
+      if [ -n "${name}" ] && ! git config --file "${local_config}" user.name >/dev/null 2>&1; then
+        git config --file "${local_config}" user.name "${name}"
+        log_success "Migrated user.name to .gitconfig.local"
+      fi
+      if [ -n "${email}" ] && ! git config --file "${local_config}" user.email >/dev/null 2>&1; then
+        git config --file "${local_config}" user.email "${email}"
+        log_success "Migrated user.email to .gitconfig.local"
+      fi
+    fi
+
+    cp "${target}" "${target}.bak"
+    log_info "Backed up .gitconfig to .gitconfig.bak"
+    rm "${target}"
   fi
+
+  create_symlink "${source}" "${target}"
 }
 
 process_dotfile() {
