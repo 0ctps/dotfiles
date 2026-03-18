@@ -147,6 +147,21 @@ fi
 
 
 
+# * »»  source -----------------------------------------/
+# [[
+
+source_file $HOME/.fzf.zsh
+source_file ${HOME}/.enhancd/init.sh
+source_file $ZDOTDIR/rc/function.zsh
+if [ ! $(ls ${HOME}/.cache/zsh | wc -l) -eq 0 ];then
+  source_file ${HOME}/.cache/zsh/*
+fi
+
+# ]]
+# * «« -------------------------------------------------/
+
+
+
 # * »»  plugin -----------------------------------------/
 # [[
 
@@ -155,7 +170,6 @@ if (( $+commands[git] )); then
 fi
 
 #https://github.com/junegunn/fzf
-source_file $HOME/.fzf.zsh
 if (( $+commands[fzf] )); then
   fe() {
     local file
@@ -183,8 +197,6 @@ if (( $+commands[fzf] )); then
     ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
   }
 fi
-
-source_file ${HOME}/.enhancd/init.sh
 
 # ]]
 # * «« -------------------------------------------------/
@@ -600,12 +612,7 @@ esac
 # ---------------------------------------------------------------------/
 # [
 
-source_file $ZDOTDIR/rc/function.zsh
-
+# syntax highlighting must be sourced last (after all ZLE widgets)
 source_file ${HOME}/.syntax/zsh-syntax-highlighting.zsh
-
-if [ ! $(ls ${HOME}/.cache/zsh | wc -l) -eq 0 ];then
-  source_file ${HOME}/.cache/zsh/*
-fi
 
 # ]
