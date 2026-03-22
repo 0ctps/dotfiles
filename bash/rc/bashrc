@@ -39,6 +39,7 @@
 export EDITOR=vim
 export LANG=en_US
 export ENCODE=UTF-8
+export LC_COLLATE=$LANG.$ENCODE
 export LC_CTYPE=$LANG.$ENCODE
 export LC_ALL=$LANG.$ENCODE
 export KCODE=u
@@ -50,7 +51,7 @@ bind '"jj":vi-movement-mode'
 shopt -s autocd
 shopt -u mailwarn
 shopt -u hostcomplete
-alias history='history -E'
+export HISTTIMEFORMAT='%F %T  '
 
 # ref. https://rcmdnk.com/blog/2017/10/13/computer-bash-zsh
 source_file() {
@@ -103,7 +104,7 @@ shopt -s cmdhist
 
 bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
-function history-all { history -E 1; }
+function history-all { history 1; }
 
 # ]]
 # * «« -------------------------------------------------/
@@ -159,12 +160,8 @@ if [ -x "$(command -v fzf)" ]; then
   }
 
   fh() {
-    selected_command=$( ([ -n "$BASH_VERSION" ] && fc -l 1 || history) | fzf +s | sed 's/ *[0-9]* *//')
-    if [ -n "$BASH_VERSION" ]; then
-      print -s "$selected_command"
-    else
-      history -s "$selected_command"
-    fi
+    selected_command=$(fc -l 1 | fzf +s | sed 's/ *[0-9]* *//')
+    history -s "$selected_command"
     eval "$selected_command"
   }
 
@@ -185,8 +182,7 @@ fi
 
 alias v='vim'
 
-function runcpp() { gcc "$1" && shift && ./a.out "$@"; }
-alias c=runcpp
+function runcpp() { g++ "$1" && shift && ./a.out "$@"; }
 alias cpp=runcpp
 
 function extract() {
@@ -217,7 +213,6 @@ alias arj='extract'
 alias xz='extract'
 alias rar='extract'
 
-alias zmv='noglob zmv -W'
 alias fuck='eval $(thefuck $(fc -ln -1))'
 alias diff='diff -u'
 
@@ -228,11 +223,16 @@ if [ -x "$(command -v tmux)" ]; then
   alias tat='tmux a -t $1'
 fi
 
+if [ -x "$(command -v claude)" ]; then
+  alias claude='claude --dangerously-skip-permissions'
+  alias c='claude --dangerously-skip-permissions'
+  alias cr='claude --dangerously-skip-permissions --resume'
+fi
+
 bind -x '"\C-l": clear;update_prompt'
 
 alias ls='ls -F --color=auto --group-directories-first'
-alias cd='cd_func'
-cd_func() {
+cd() {
   builtin cd "$@" && ls;
 }
 
@@ -344,7 +344,6 @@ export CLICOLOR=true
 # [[
 
 PS1='\w\$ '
-SPROMPT="%r is correct [n,y,a,e]: "
 
 case "$TERM" in
   xterm*)
@@ -567,7 +566,7 @@ case "${OSTYPE}" in #uname http://en.wikipedia.org/wiki/Uname
       export PATH="${HOME}/.bin:${PATH}"
     fi
     if [ -e "${HOME}/.tmux.conf" ] && [ -x "$(command -v tmux)" ]; then
-      if [ -z "$TMUX" ] && [ "$-" != "*l*" ]; then # l option = login shell
+      if [[ -z "$TMUX" ]] && [[ $- != *l* || -n "${WSL_DISTRO_NAME:-}" ]]; then # l option = login shell
         ID="$(tmux list-sessions 2>/dev/null)"
         if [ -z "$ID" ]; then
           tmux new-session
@@ -616,6 +615,12 @@ esac
 # [
 
 source_file $HOME/.bashrc.local
+
+if [ -d "${HOME}/.cache/bash" ] && [ -n "$(ls -A "${HOME}/.cache/bash" 2>/dev/null)" ]; then
+  for f in "${HOME}"/.cache/bash/*; do
+    source_file "$f"
+  done
+fi
 
 if [ -f "${HOME}/.bash-git-prompt/gitprompt.sh" ]; then
   GIT_PROMPT_ONLY_IN_REPO=1
