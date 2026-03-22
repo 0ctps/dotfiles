@@ -89,7 +89,7 @@ fpath=($ZDOTDIR/rc/completion $fpath)
 
 # ref. https://unix.stackexchange.com/questions/273861/unlimited-history-in-zsh
 HISTFILE=$HOME/.zsh_history
-HISTSIZE=5000
+HISTSIZE=10000000
 SAVEHIST=10000000
 
 setopt bang_hist                 # treat the '!' character specially during expansion.
@@ -600,6 +600,8 @@ esac
 # -------------------------------------------                           /
 # ---------------------------------------------------------------------/
 # [
+
+source_file $HOME/.zshrc.local
 
 # syntax highlighting must be sourced last (after all ZLE widgets)
 source_file ${HOME}/.syntax/zsh-syntax-highlighting.zsh
