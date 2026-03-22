@@ -8,3 +8,4 @@
 #       * ver       : 1.00
 
 export ZDOTDIR=$HOME/.zsh
+. "$HOME/.cargo/env"
