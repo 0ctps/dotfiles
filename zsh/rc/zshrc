@@ -527,17 +527,6 @@ if [[ $TERM = xterm* ]];then
 fi
 
 
-
-# * »»» prompt reset (time sync) -------/
-
-zmodload zsh/datetime
-reset_tmout() { TMOUT=$[1-EPOCHSECONDS%1] }
-precmd_functions=(${precmd_functions} reset_tmout)
-redraw_tmout() { zle reset-prompt; reset_tmout }
-TRAPALRM() { redraw_tmout }
-
-# * ««« --------------------------------/
-
 # ]]
 # * «« -------------------------------------------------/
 
