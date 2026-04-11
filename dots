@@ -419,13 +419,38 @@ setup_tmux() {
           log_error "Tmux plugin build failed"
         fi
         cd "${DOT_HOME}"
+      else
+        log_warn "tmux-mem-cpu-load clone failed (network unreachable?), skipping"
       fi
     fi
   else
     log_skip "Tmux plugin already installed"
   fi
 
+  local tpm_dir="${HOME}/.tmux/plugins/tpm"
+  if [ ! -d "${tpm_dir}" ]; then
+    log_info "Installing tpm"
+    if git clone https://github.com/tmux-plugins/tpm "${tpm_dir}" 2>/dev/null; then
+      log_success "tpm installed"
+    else
+      log_warn "tpm clone failed (network unreachable?), skipping plugin install"
+    fi
+  else
+    log_skip "tpm already installed"
+  fi
+
   create_symlink "${DOT_HOME}/tmux/tmux.conf" "${HOME}/.tmux.conf"
+
+  if [ -x "${tpm_dir}/bin/install_plugins" ] && command_exists tmux; then
+    log_info "Installing tpm plugins"
+    if tmux new-session -d -s __dots_tpm_install__ \
+         "'${tpm_dir}/bin/install_plugins' >/dev/null 2>&1; tmux kill-session -t __dots_tpm_install__" \
+         2>/dev/null; then
+      log_success "tpm plugins installed"
+    else
+      log_warn "tpm plugin install failed (network unreachable?), run 'prefix + I' later"
+    fi
+  fi
 }
 
 setup_vim() {
