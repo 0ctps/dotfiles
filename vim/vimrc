@@ -497,6 +497,20 @@ se shortmess& shortmess+=I
 se hlsearch
 se lazyredraw
 
+" no conceal: エディタ側で文字を非表示・置換させない
+se conceallevel=0
+se concealcursor=
+se display=lastline
+let g:vim_json_conceal = 0
+let g:markdown_syntax_conceal = 0
+let g:haskell_conceal = 0
+let g:haskell_conceal_wide = 0
+let g:haskell_conceal_enumerations = 0
+let g:rust_conceal = 0
+let g:tex_conceal = ''
+au fau BufWinEnter,FileType,Syntax * setl conceallevel=0 concealcursor=
+au fau OptionSet conceallevel,concealcursor setl conceallevel=0 concealcursor=
+
 se statusline=[%n]
 se statusline& statusline+=%{matchstr(hostname(),'\\w\\+')}@
 se statusline& statusline+=%<%F
