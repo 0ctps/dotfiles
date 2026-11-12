@@ -511,6 +511,18 @@ let g:tex_conceal = ''
 au fau BufWinEnter,FileType,Syntax * setl conceallevel=0 concealcursor=
 au fau OptionSet conceallevel,concealcursor setl conceallevel=0 concealcursor=
 
+" indent guide: 行頭の空白を shiftwidth ごとに '|' で示す (listchars の
+" leadmultispace。文字を隠さず空白の表示だけを変える。vim 8.2.5066 以降)
+fu! s:IndentGuide() abort
+  if !has('patch-8.2.5066')
+    return
+  en
+  let base = substitute(&g:listchars, ',\=leadmultispace:[^,]*', '', 'g')
+  let &l:listchars = base . ',leadmultispace:|' . repeat(' ', shiftwidth() - 1)
+endf
+au fau BufWinEnter,FileType * cal s:IndentGuide()
+au fau OptionSet shiftwidth,tabstop cal s:IndentGuide()
+
 se statusline=[%n]
 se statusline& statusline+=%{matchstr(hostname(),'\\w\\+')}@
 se statusline& statusline+=%<%F
