@@ -59,5 +59,5 @@ $ ./dots -r tmux
 | `~/.gitconfig.local` | Per-host settings (user, credential helper, ...). Included from the shared settings |
 
   * git reads `~/.config/git/config` first and `~/.gitconfig` after it, so host-local values win
-  * An old `~/.gitconfig` symlink to this repo is replaced with an empty host-local file
+  * An old `~/.gitconfig` symlink to this repo is replaced with a new host-local file (comments only)
   * Do not delete `~/.gitconfig`: without it, `git config --global` writes to the shared file in this repo
