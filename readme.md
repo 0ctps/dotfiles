@@ -47,3 +47,17 @@ $ ./dots -r tmux
   * tmux
   * vim
   * zsh
+
+## Git config
+
+`install` always sets up git config, regardless of the targets:
+
+| File | Role |
+|---|---|
+| `~/.config/git/config` | Shared settings. Symlink to `.gitconfig` in this repo |
+| `~/.gitconfig` | Host-local regular file. `git config --global` writes here, so this repo stays clean |
+| `~/.gitconfig.local` | Per-host settings (user, credential helper, ...). Included from the shared settings |
+
+  * git reads `~/.config/git/config` first and `~/.gitconfig` after it, so host-local values win
+  * An old `~/.gitconfig` symlink to this repo is replaced with an empty host-local file
+  * Do not delete `~/.gitconfig`: without it, `git config --global` writes to the shared file in this repo
